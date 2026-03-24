@@ -16,7 +16,10 @@ import { AdminDashboardPage } from "@/pages/admin/AdminDashboardPage"
 import { AdminProductsPage } from "@/pages/admin/AdminProductsPage"
 import { AdminOrdersPage } from "@/pages/admin/AdminOrdersPage"
 import { AdminUsersPage } from "@/pages/admin/AdminUsersPage"
-
+import { AdminVouchersPage } from "@/pages/admin/AdminVouchersPage"
+import { AdminReviewsPage } from "@/pages/admin/AdminReviewsPage"
+import { AdminLogsPage } from "@/pages/admin/AdminLogsPage"
+// Force TS update
 export const router = createBrowserRouter([
   {
     element: <MainLayout />,
@@ -48,7 +51,15 @@ export const router = createBrowserRouter([
           { index: true, element: <AdminDashboardPage /> },
           { path: "products", element: <AdminProductsPage /> },
           { path: "orders", element: <AdminOrdersPage /> },
-          { path: "users", element: <AdminUsersPage /> },
+          {
+            element: <ProtectedRoute allowedRoles={["admin", "superadmin"]} />,
+            children: [
+              { path: "users", element: <AdminUsersPage /> },
+              { path: "vouchers", element: <AdminVouchersPage /> },
+              { path: "reviews", element: <AdminReviewsPage /> },
+              { path: "logs", element: <AdminLogsPage /> },
+            ],
+          },
         ],
       },
     ],

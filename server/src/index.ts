@@ -9,6 +9,8 @@ import authRoutes from "./routes/auth.routes";
 import productRoutes from "./routes/product.routes";
 import orderRoutes from "./routes/order.routes";
 import adminRoutes from "./routes/admin.routes";
+import voucherRoutes from "./routes/voucher.routes";
+import reviewRoutes from "./routes/review.routes";
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -27,6 +29,8 @@ app.use("/api/auth", authRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/vouchers", voucherRoutes);
+app.use("/api/reviews", reviewRoutes);
 
 app.get("/", (_req: Request, res: Response) => {
   res.json({ message: "Server is running!" });

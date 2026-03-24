@@ -23,6 +23,8 @@ export interface IOrder extends Document {
   shippingAddress: IShippingAddress;
   paymentMethod: string;
   totalPrice: number;
+  deliveryDate: Date;
+  deliveryTime: string;
   status: "pending" | "processing" | "shipped" | "delivered" | "cancelled";
   createdAt: Date;
   updatedAt: Date;
@@ -87,6 +89,14 @@ const orderSchema = new Schema<IOrder>(
       type: Number,
       required: true,
       min: [0, "Total price cannot be negative"],
+    },
+    deliveryDate: {
+      type: Date,
+      required: [true, "Delivery date is required"],
+    },
+    deliveryTime: {
+      type: String,
+      required: [true, "Delivery time is required"],
     },
     status: {
       type: String,

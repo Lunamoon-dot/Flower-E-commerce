@@ -5,6 +5,9 @@ interface CreateOrderPayload {
   items: { product: string; quantity: number }[]
   shippingAddress: ShippingAddress
   paymentMethod: string
+  deliveryDate: string
+  deliveryTime: string
+  voucherCode?: string
 }
 
 export const orderService = {

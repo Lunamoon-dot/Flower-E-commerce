@@ -3,6 +3,7 @@ import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { Plus, Pencil, Trash2, Search, Star, X, Check, Upload, ImagePlus, Loader2 } from "lucide-react"
+import { useAuthStore } from "@/store/useAuthStore"
 import { adminService } from "@/services/adminService"
 import api from "@/services/api"
 import type { Product, ProductCategory } from "@/types"
@@ -164,6 +165,9 @@ export function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
+  const { user: currentUser } = useAuthStore()
+  const canManageProducts = currentUser && ["admin", "superadmin", "salestaff"].includes(currentUser.role)
+  const canDeleteProducts = currentUser && ["admin", "superadmin"].includes(currentUser.role)
   const [showModal, setShowModal] = useState(false)
   const [editProduct, setEditProduct] = useState<Product | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
@@ -272,12 +276,14 @@ export function AdminProductsPage() {
           <h1 className="text-2xl font-bold text-white">Sản phẩm</h1>
           <p className="text-sm text-white/40">{products.length} sản phẩm</p>
         </div>
-        <button
-          onClick={openCreate}
-          className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-pink-500 to-rose-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-pink-500/25 transition-all hover:brightness-110"
-        >
-          <Plus className="size-4" /> Thêm sản phẩm
-        </button>
+        {canManageProducts && (
+          <button
+            onClick={openCreate}
+            className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-pink-500 to-rose-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-pink-500/25 transition-all hover:brightness-110"
+          >
+            <Plus className="size-4" /> Thêm sản phẩm
+          </button>
+        )}
       </div>
 
       {/* Search */}
@@ -338,14 +344,18 @@ export function AdminProductsPage() {
                     </div>
                   </td>
                   <td className="px-4 py-3">
-                    <div className="flex items-center gap-2 opacity-0 transition-opacity group-hover:opacity-100">
-                      <button onClick={() => openEdit(p)} className="rounded-lg bg-blue-500/10 p-1.5 text-blue-400 hover:bg-blue-500/20">
-                        <Pencil className="size-3.5" />
-                      </button>
-                      <button onClick={() => setDeleteId(p._id)} className="rounded-lg bg-red-500/10 p-1.5 text-red-400 hover:bg-red-500/20">
-                        <Trash2 className="size-3.5" />
-                      </button>
-                    </div>
+                    {canManageProducts && (
+                      <div className="flex items-center gap-2 opacity-0 transition-opacity group-hover:opacity-100">
+                        <button onClick={() => openEdit(p)} className="rounded-lg bg-blue-500/10 p-1.5 text-blue-400 hover:bg-blue-500/20">
+                          <Pencil className="size-3.5" />
+                        </button>
+                        {canDeleteProducts && (
+                          <button onClick={() => setDeleteId(p._id)} className="rounded-lg bg-red-500/10 p-1.5 text-red-400 hover:bg-red-500/20">
+                            <Trash2 className="size-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </td>
                 </tr>
               ))}

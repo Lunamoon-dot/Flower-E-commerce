@@ -30,7 +30,13 @@ export function LoginPage() {
     clearError()
     await login(data.email, data.password)
     const { user } = useAuthStore.getState()
-    if (user) navigate("/")
+    if (user) {
+      if (["admin", "superadmin", "salestaff"].includes(user.role)) {
+        navigate("/admin")
+      } else {
+        navigate("/")
+      }
+    }
   }
 
   return (

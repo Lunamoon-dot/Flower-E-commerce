@@ -2,7 +2,7 @@ export interface User {
   id: string
   name: string
   email: string
-  role: "user" | "admin"
+  role: "user" | "admin" | "superadmin" | "salestaff"
 }
 
 export interface Product {
@@ -40,6 +40,8 @@ export interface Order {
   items: OrderItem[]
   shippingAddress: ShippingAddress
   paymentMethod: string
+  deliveryDate: string
+  deliveryTime: string
   totalPrice: number
   status: OrderStatus
   createdAt: string
@@ -93,4 +95,39 @@ export interface PaginatedResponse<T> {
   total: number
   page: number
   totalPages: number
+}
+
+export interface Voucher {
+  _id: string
+  code: string
+  type: "percent" | "fixed" | "freeship"
+  value: number
+  minOrderValue: number
+  startDate: string
+  endDate: string
+  usageLimit: number
+  usedCount: number
+  isActive: boolean
+}
+
+export interface Review {
+  _id: string
+  product: string | Product
+  user: { _id: string; name: string; avatar?: string; email?: string }
+  rating: number
+  comment: string
+  isHidden: boolean
+  isApproved: boolean
+  adminReply?: string
+  createdAt: string
+}
+
+export interface ActivityLog {
+  _id: string
+  admin: { _id: string; name: string; role?: string }
+  action: string
+  description: string
+  targetId?: string
+  targetModel?: string
+  createdAt: string
 }

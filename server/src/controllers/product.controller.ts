@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import Product from "../models/Product";
+import { logActivity } from "./log.controller";
 
 export const getProducts = async (
   req: Request,
@@ -74,6 +75,7 @@ export const createProduct = async (
 ): Promise<void> => {
   try {
     const product = await Product.create(req.body);
+    await logActivity((req as any).user.id, "CREATE_PRODUCT", `Tạo sản phẩm mới: ${product.name}`, product._id.toString(), "Product");
     res.status(201).json(product);
   } catch (error) {
     const message =
@@ -95,6 +97,7 @@ export const updateProduct = async (
       res.status(404).json({ message: "Product not found" });
       return;
     }
+    await logActivity((req as any).user.id, "UPDATE_PRODUCT", `Cập nhật sản phẩm: ${product.name}`, product._id.toString(), "Product");
     res.json(product);
   } catch (error) {
     const message =
@@ -113,6 +116,7 @@ export const deleteProduct = async (
       res.status(404).json({ message: "Product not found" });
       return;
     }
+    await logActivity((req as any).user.id, "DELETE_PRODUCT", `Xóa sản phẩm: ${product.name}`, product._id.toString(), "Product");
     res.json({ message: "Product deleted successfully" });
   } catch (error) {
     const message =

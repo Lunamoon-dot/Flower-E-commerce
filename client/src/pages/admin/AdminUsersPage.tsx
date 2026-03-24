@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { Search, ShieldCheck, ShieldOff, Trash2, X, Check } from "lucide-react"
+import { Search, Trash2, X, Check } from "lucide-react"
 import { adminService, type AdminUser } from "@/services/adminService"
 import { useAuthStore } from "@/store/useAuthStore"
 
@@ -32,16 +32,15 @@ export function AdminUsersPage() {
       .finally(() => setLoading(false))
   }, [])
 
-  const handleRoleToggle = async (user: AdminUser) => {
+  const handleChangeRole = async (user: AdminUser, newRole: string) => {
     if (user._id === currentUser?.id) {
       showToast("Không thể đổi role của chính mình", "error")
       return
     }
-    const newRole = user.role === "admin" ? "user" : "admin"
     try {
-      const updated = await adminService.updateUserRole(user._id, newRole)
+      const updated = await adminService.updateUserRole(user._id, newRole as any)
       setUsers((prev) => prev.map((u) => (u._id === updated._id ? updated : u)))
-      showToast(`Đã đổi role thành ${newRole === "admin" ? "Admin" : "User"}`)
+      showToast(`Đã đổi role thành ${newRole.toUpperCase()}`)
     } catch {
       showToast("Cập nhật thất bại", "error")
     }
@@ -65,7 +64,9 @@ export function AdminUsersPage() {
       u.email.toLowerCase().includes(search.toLowerCase()),
   )
 
+  const supersCount = users.filter((u) => u.role === "superadmin").length
   const adminCount = users.filter((u) => u.role === "admin").length
+  const salesCount = users.filter((u) => u.role === "salestaff").length
   const userCount = users.filter((u) => u.role === "user").length
 
   return (
@@ -90,7 +91,13 @@ export function AdminUsersPage() {
         </div>
         <div className="flex gap-2">
           <span className="rounded-full bg-pink-500/10 px-3 py-1 text-xs font-medium text-pink-400 ring-1 ring-pink-500/20">
+            {supersCount} Super
+          </span>
+          <span className="rounded-full bg-purple-500/10 px-3 py-1 text-xs font-medium text-purple-400 ring-1 ring-purple-500/20">
             {adminCount} Admin
+          </span>
+          <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-400 ring-1 ring-emerald-500/20">
+            {salesCount} Sale
           </span>
           <span className="rounded-full bg-blue-500/10 px-3 py-1 text-xs font-medium text-blue-400 ring-1 ring-blue-500/20">
             {userCount} User
@@ -145,33 +152,33 @@ export function AdminUsersPage() {
                   <td className="px-4 py-3 text-white/60">{u.email}</td>
                   <td className="px-4 py-3">
                     <span
-                      className={`rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${
-                        u.role === "admin"
+                      className={`rounded-full px-2.5 py-1 text-[10px] uppercase font-semibold ring-1 ${
+                        u.role === "superadmin"
                           ? "bg-pink-500/10 text-pink-400 ring-pink-500/20"
+                          : u.role === "admin"
+                          ? "bg-purple-500/10 text-purple-400 ring-purple-500/20"
+                          : u.role === "salestaff"
+                          ? "bg-emerald-500/10 text-emerald-400 ring-emerald-500/20"
                           : "bg-white/5 text-white/50 ring-white/10"
                       }`}
                     >
-                      {u.role === "admin" ? "Admin" : "User"}
+                      {u.role}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-xs text-white/40">{formatDate(u.createdAt)}</td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2 opacity-0 transition-opacity group-hover:opacity-100">
-                      <button
-                        onClick={() => handleRoleToggle(u)}
-                        title={u.role === "admin" ? "Hạ xuống User" : "Nâng lên Admin"}
-                        className={`rounded-lg p-1.5 transition-colors ${
-                          u.role === "admin"
-                            ? "bg-amber-500/10 text-amber-400 hover:bg-amber-500/20"
-                            : "bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20"
-                        }`}
+                      <select
+                        value={u.role}
+                        onChange={(e) => handleChangeRole(u, e.target.value)}
+                        disabled={u._id === currentUser?.id}
+                        className="rounded-lg bg-[#252533] px-2 py-1 text-xs font-medium text-white border border-white/10 outline-none focus:border-pink-500"
                       >
-                        {u.role === "admin" ? (
-                          <ShieldOff className="size-3.5" />
-                        ) : (
-                          <ShieldCheck className="size-3.5" />
-                        )}
-                      </button>
+                        <option value="user">User</option>
+                        <option value="salestaff">Sale Staff</option>
+                        <option value="admin">Admin</option>
+                        <option value="superadmin">Super Admin</option>
+                      </select>
                       {u._id !== currentUser?.id && (
                         <button
                           onClick={() => setDeleteId(u._id)}

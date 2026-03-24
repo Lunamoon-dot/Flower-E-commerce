@@ -3,11 +3,13 @@ import { useAuthStore } from "@/store/useAuthStore"
 
 interface ProtectedRouteProps {
   requireAdmin?: boolean
+  allowedRoles?: ("user" | "admin" | "superadmin" | "salestaff")[]
   redirectTo?: string
 }
 
 export function ProtectedRoute({
   requireAdmin = false,
+  allowedRoles,
   redirectTo = "/login",
 }: ProtectedRouteProps) {
   const { user, token, isInitializing } = useAuthStore()
@@ -25,8 +27,12 @@ export function ProtectedRoute({
     return <Navigate to={redirectTo} replace />
   }
 
-  if (requireAdmin && user.role !== "admin") {
+  if (requireAdmin && !["admin", "superadmin", "salestaff"].includes(user.role)) {
     return <Navigate to="/" replace />
+  }
+
+  if (allowedRoles && !allowedRoles.includes(user.role)) {
+    return <Navigate to="/admin" replace />
   }
 
   return <Outlet />

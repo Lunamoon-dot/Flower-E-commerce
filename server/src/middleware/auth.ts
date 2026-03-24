@@ -39,14 +39,15 @@ export const protect = async (
   }
 };
 
-export const adminOnly = (
-  req: AuthRequest,
-  res: Response,
-  next: NextFunction
-): void => {
-  if (req.user?.role !== "admin") {
-    res.status(403).json({ message: "Access denied, admin only" });
-    return;
-  }
-  next();
+export const authorizeRoles = (...roles: string[]) => {
+  return (req: AuthRequest, res: Response, next: NextFunction): void => {
+    if (!req.user || !roles.includes(req.user.role)) {
+      res.status(403).json({ message: "Access denied. Insufficient permissions." });
+      return;
+    }
+    next();
+  };
 };
+
+export const adminOnly = authorizeRoles("admin", "superadmin");
+export const staffOnly = authorizeRoles("admin", "superadmin", "salestaff");

@@ -74,7 +74,7 @@ export function Navbar() {
 
           {user ? (
             <div className="hidden items-center gap-1 md:flex">
-              {user.role === "admin" && (
+              {["admin", "superadmin", "salestaff"].includes(user.role) && (
                 <button
                   onClick={() => navigate("/admin")}
                   className="flex size-8 items-center justify-center rounded-full text-pink-600 transition-all hover:bg-pink-600/40"
@@ -134,7 +134,7 @@ export function Navbar() {
             <div className="my-2 h-px bg-white/20 mx-2" />
             {user ? (
               <div className="space-y-1">
-                {user.role === "admin" && (
+                {["admin", "superadmin", "salestaff"].includes(user.role) && (
                   <Link
                     to="/admin"
                     onClick={() => setMobileOpen(false)}

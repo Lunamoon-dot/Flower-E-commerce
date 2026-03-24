@@ -12,13 +12,8 @@ import {
   Cell,
   Legend,
 } from "recharts"
-import {
-  TrendingUp,
-  ShoppingBag,
-  Package,
-  Users,
-  AlertTriangle,
-} from "lucide-react"
+import { AlertTriangle, Package, ShoppingBag, TrendingUp, Users } from "lucide-react"
+import { useAuthStore } from "@/store/useAuthStore"
 import { adminService, type DashboardResponse } from "@/services/adminService"
 
 const STATUS_COLORS: Record<string, string> = {
@@ -91,6 +86,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 }
 
 export function AdminDashboardPage() {
+  const { user: currentUser } = useAuthStore()
   const [data, setData] = useState<DashboardResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
@@ -131,13 +127,15 @@ export function AdminDashboardPage() {
 
       {/* Stats cards */}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard
-          icon={TrendingUp}
-          label="Tổng doanh thu"
-          value={formatCurrency(stats.totalRevenue)}
-          gradient="bg-gradient-to-br from-violet-500 to-purple-600"
-          valueColor="text-violet-300"
-        />
+        {["admin", "superadmin"].includes(currentUser?.role || "") && (
+          <StatCard
+            icon={TrendingUp}
+            label="Tổng doanh thu"
+            value={formatCurrency(stats.totalRevenue)}
+            gradient="bg-gradient-to-br from-violet-500 to-purple-600"
+            valueColor="text-violet-300"
+          />
+        )}
         <StatCard
           icon={ShoppingBag}
           label="Tổng đơn hàng"
@@ -151,12 +149,14 @@ export function AdminDashboardPage() {
           value={stats.totalProducts.toLocaleString()}
           gradient="bg-gradient-to-br from-blue-500 to-cyan-600"
         />
-        <StatCard
-          icon={Users}
-          label="Người dùng"
-          value={stats.totalUsers.toLocaleString()}
-          gradient="bg-gradient-to-br from-emerald-500 to-teal-600"
-        />
+        {["admin", "superadmin"].includes(currentUser?.role || "") && (
+          <StatCard
+            icon={Users}
+            label="Người dùng"
+            value={stats.totalUsers.toLocaleString()}
+            gradient="bg-gradient-to-br from-emerald-500 to-teal-600"
+          />
+        )}
       </div>
 
       {/* Daily Chart */}

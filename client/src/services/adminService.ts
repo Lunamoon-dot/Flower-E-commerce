@@ -1,5 +1,5 @@
 import api from "./api"
-import type { Product, Order } from "@/types"
+import type { Product, Order, Voucher, Review, ActivityLog } from "@/types"
 
 export interface DashboardStats {
   totalRevenue: number
@@ -44,7 +44,7 @@ export interface AdminUser {
   _id: string
   name: string
   email: string
-  role: "user" | "admin"
+  role: "user" | "admin" | "superadmin" | "salestaff"
   createdAt: string
 }
 
@@ -93,5 +93,38 @@ export const adminService = {
   },
   deleteProduct: async (id: string): Promise<void> => {
     await api.delete(`/admin/products/${id}`)
+  },
+
+  // Vouchers
+  getVouchers: async (): Promise<Voucher[]> => {
+    const { data } = await api.get("/admin/vouchers")
+    return data
+  },
+  createVoucher: async (voucherData: Partial<Voucher>): Promise<Voucher> => {
+    const { data } = await api.post("/admin/vouchers", voucherData)
+    return data
+  },
+  updateVoucher: async (id: string, voucherData: Partial<Voucher>): Promise<Voucher> => {
+    const { data } = await api.put(`/admin/vouchers/${id}`, voucherData)
+    return data
+  },
+  deleteVoucher: async (id: string): Promise<void> => {
+    await api.delete(`/admin/vouchers/${id}`)
+  },
+
+  // Reviews
+  getReviews: async (): Promise<Review[]> => {
+    const { data } = await api.get("/admin/reviews")
+    return data
+  },
+  updateReview: async (id: string, reviewData: Partial<Review>): Promise<Review> => {
+    const { data } = await api.put(`/admin/reviews/${id}`, reviewData)
+    return data
+  },
+
+  // Logs
+  getLogs: async (): Promise<ActivityLog[]> => {
+    const { data } = await api.get("/admin/logs")
+    return data
   },
 }

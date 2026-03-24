@@ -2,13 +2,20 @@ import { Response } from "express";
 import Order from "../models/Order";
 import Product from "../models/Product";
 import { AuthRequest } from "../middleware/auth";
+import Voucher from "../models/Voucher";
+import { logActivity } from "./log.controller";
 
 export const createOrder = async (
   req: AuthRequest,
   res: Response
 ): Promise<void> => {
   try {
-    const { items, shippingAddress, paymentMethod } = req.body;
+    const { items, shippingAddress, paymentMethod, deliveryDate, deliveryTime, voucherCode } = req.body;
+
+    if (!deliveryDate || !deliveryTime) {
+      res.status(400).json({ message: "Delivery date and time are required" });
+      return;
+    }
 
     if (!items || items.length === 0) {
       res.status(400).json({ message: "Order must have at least one item" });
@@ -65,12 +72,28 @@ export const createOrder = async (
       });
     }
 
+    let discountApplied = 0;
+    if (voucherCode) {
+      const voucher = await Voucher.findOne({ code: voucherCode.toUpperCase(), isActive: true });
+      if (voucher && new Date() >= voucher.startDate && new Date() <= voucher.endDate && voucher.usedCount < voucher.usageLimit && totalPrice >= voucher.minOrderValue) {
+        if (voucher.type === "percent") {
+          discountApplied = (totalPrice * voucher.value) / 100;
+        } else {
+          discountApplied = voucher.value;
+        }
+        voucher.usedCount += 1;
+        await voucher.save();
+      }
+    }
+
     const order = await Order.create({
       user: req.user!.id,
       items: orderItems,
       shippingAddress,
       paymentMethod: paymentMethod || "cod",
-      totalPrice,
+      deliveryDate: new Date(deliveryDate),
+      deliveryTime,
+      totalPrice: Math.max(0, totalPrice - discountApplied), // Ensure non-negative
     });
 
     res.status(201).json(order);
@@ -140,12 +163,14 @@ export const updateOrderStatus = async (
       req.params.id,
       { status },
       { new: true }
-    );
+    ).populate("user", "name email");
 
     if (!order) {
       res.status(404).json({ message: "Order not found" });
       return;
     }
+
+    await logActivity(req.user!.id, "UPDATE_ORDER_STATUS", `Cập nhật trạng thái đơn hàng #${order._id.toString().slice(-8)} thành ${status}`, order._id.toString(), "Order");
 
     res.json(order);
   } catch (error) {

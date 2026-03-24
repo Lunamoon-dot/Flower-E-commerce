@@ -8,15 +8,21 @@ import {
   LogOut,
   Menu,
   X,
-  Flower2,
+  TerminalSquare,
+  Ticket,
+  MessageSquare,
+  Flower2
 } from "lucide-react"
 import { useAuthStore } from "@/store/useAuthStore"
 
 const NAV_ITEMS = [
-  { to: "/admin", icon: LayoutDashboard, label: "Dashboard", end: true },
-  { to: "/admin/products", icon: Package, label: "Sản phẩm" },
-  { to: "/admin/orders", icon: ShoppingBag, label: "Đơn hàng" },
-  { to: "/admin/users", icon: Users, label: "Người dùng" },
+  { to: "/admin", icon: LayoutDashboard, label: "Dashboard", end: true, roles: ["admin", "superadmin", "salestaff"] },
+  { to: "/admin/products", icon: Package, label: "Sản phẩm", roles: ["admin", "superadmin", "salestaff"] },
+  { to: "/admin/orders", icon: ShoppingBag, label: "Đơn hàng", roles: ["admin", "superadmin", "salestaff"] },
+  { to: "/admin/users", icon: Users, label: "Người dùng", roles: ["admin", "superadmin"] },
+  { to: "/admin/vouchers", icon: Ticket, label: "Khuyến mãi", roles: ["admin", "superadmin"] },
+  { to: "/admin/reviews", icon: MessageSquare, label: "Đánh giá", roles: ["admin", "superadmin"] },
+  { to: "/admin/logs", icon: TerminalSquare, label: "Lịch sử", roles: ["admin", "superadmin"] },
 ]
 
 export function AdminLayout() {
@@ -64,7 +70,7 @@ export function AdminLayout() {
 
         {/* Navigation */}
         <nav className="flex-1 space-y-1 px-3 py-4">
-          {NAV_ITEMS.map(({ to, icon: Icon, label, end }) => (
+          {NAV_ITEMS.filter((item) => user && item.roles.includes(user.role)).map(({ to, icon: Icon, label, end }) => (
             <NavLink
               key={to}
               to={to}
@@ -92,7 +98,7 @@ export function AdminLayout() {
             </div>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium text-white">{user?.name}</p>
-              <p className="text-xs text-white/40">Administrator</p>
+              <p className="text-xs text-white/40 uppercase">{user?.role}</p>
             </div>
           </div>
           <button

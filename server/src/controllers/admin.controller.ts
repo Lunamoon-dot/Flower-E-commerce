@@ -3,6 +3,7 @@ import Order from "../models/Order";
 import Product from "../models/Product";
 import User from "../models/User";
 import { AuthRequest } from "../middleware/auth";
+import { logActivity } from "./log.controller";
 
 // GET /api/admin/dashboard – overview stats + chart data
 export const getDashboardStats = async (
@@ -132,8 +133,8 @@ export const updateUserRole = async (
 ): Promise<void> => {
   try {
     const { role } = req.body;
-    if (!["user", "admin"].includes(role)) {
-      res.status(400).json({ message: "Role must be 'user' or 'admin'" });
+    if (!["user", "admin", "superadmin", "salestaff"].includes(role)) {
+      res.status(400).json({ message: "Role must be 'user', 'admin', 'superadmin', or 'salestaff'" });
       return;
     }
     const user = await User.findByIdAndUpdate(
@@ -145,6 +146,9 @@ export const updateUserRole = async (
       res.status(404).json({ message: "User not found" });
       return;
     }
+    
+    await logActivity(req.user!.id, "UPDATE_USER_ROLE", `Cập nhật quyền cho user ${user.name} thành ${role}`, user._id.toString(), "User");
+    
     res.json(user);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to update role";
@@ -163,6 +167,9 @@ export const deleteUser = async (
       res.status(404).json({ message: "User not found" });
       return;
     }
+
+    await logActivity(req.user!.id, "DELETE_USER", `Xóa user ${user.name}`, user._id.toString(), "User");
+
     res.json({ message: "User deleted successfully" });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to delete user";

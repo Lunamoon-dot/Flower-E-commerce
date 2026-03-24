@@ -40,6 +40,8 @@ export function AdminOrdersPage() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
   const [filterStatus, setFilterStatus] = useState<OrderStatus | "all">("all")
+  const [filterDelivery, setFilterDelivery] = useState<"all" | "today" | "tomorrow">("all")
+  const [sortBy, setSortBy] = useState<"createdAt" | "deliveryDate">("createdAt")
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const [toast, setToast] = useState<{ msg: string; type: "success" | "error" } | null>(null)
 
@@ -72,7 +74,33 @@ export function AdminOrdersPage() {
     const matchSearch =
       o._id.toLowerCase().includes(search.toLowerCase()) ||
       (typeof o.user === "object" && (o.user as any)?.name?.toLowerCase().includes(search.toLowerCase()))
-    return matchStatus && matchSearch
+      
+    let matchDelivery = true
+    if (filterDelivery !== "all" && o.deliveryDate) {
+      const delivery = new Date(o.deliveryDate)
+      // Reset hours to compare dates only
+      delivery.setHours(0,0,0,0)
+      
+      const targetDate = new Date()
+      if (filterDelivery === "tomorrow") {
+        targetDate.setDate(targetDate.getDate() + 1)
+      }
+      targetDate.setHours(0,0,0,0)
+      
+      matchDelivery = delivery.getTime() === targetDate.getTime()
+    } else if (filterDelivery !== "all" && !o.deliveryDate) {
+      matchDelivery = false // no delivery date -> doesn't match a specific day filter
+    }
+
+    return matchStatus && matchSearch && matchDelivery
+  }).sort((a, b) => {
+    if (sortBy === "deliveryDate") {
+      const dateA = a.deliveryDate ? new Date(a.deliveryDate).getTime() : 0
+      const dateB = b.deliveryDate ? new Date(b.deliveryDate).getTime() : 0
+      return dateA - dateB // Closest first
+    }
+    // Default: createdAt desc
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   })
 
   return (
@@ -119,6 +147,29 @@ export function AdminOrdersPage() {
           </select>
           <ChevronDown className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-white/30" />
         </div>
+        <div className="relative">
+          <select
+            value={filterDelivery}
+            onChange={(e) => setFilterDelivery(e.target.value as "all" | "today" | "tomorrow")}
+            className="appearance-none rounded-xl border border-white/5 bg-[#1a1a24] py-2.5 pl-4 pr-9 text-sm text-white outline-none focus:border-pink-500/50"
+          >
+            <option value="all">Mọi ngày giao</option>
+            <option value="today">Giao Hôm nay</option>
+            <option value="tomorrow">Giao Ngày mai</option>
+          </select>
+          <ChevronDown className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-white/30" />
+        </div>
+        <div className="relative">
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as "createdAt" | "deliveryDate")}
+            className="appearance-none rounded-xl border border-white/5 bg-[#1a1a24] py-2.5 pl-4 pr-9 text-sm text-white outline-none focus:border-pink-500/50"
+          >
+            <option value="createdAt">Mới nhất (Ngày đặt)</option>
+            <option value="deliveryDate">Sắp giao (Ngày giao)</option>
+          </select>
+          <ChevronDown className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-white/30" />
+        </div>
       </div>
 
       {/* Table */}
@@ -131,7 +182,7 @@ export function AdminOrdersPage() {
           <table className="w-full min-w-[700px] text-sm">
             <thead>
               <tr className="border-b border-white/5">
-                {["Mã đơn", "Khách hàng", "Tổng tiền", "Trạng thái", "Ngày đặt", ""].map((h) => (
+                {["Mã đơn", "Khách hàng", "Giao hàng", "Tổng tiền", "Trạng thái", ""].map((h) => (
                   <th key={h} className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-white/30">
                     {h}
                   </th>
@@ -146,6 +197,16 @@ export function AdminOrdersPage() {
                   </td>
                   <td className="px-4 py-3 text-white">
                     {typeof o.user === "object" ? (o.user as any)?.name : "—"}
+                  </td>
+                  <td className="px-4 py-3 text-white">
+                    {o.deliveryDate ? (
+                      <div className="flex flex-col">
+                        <span className="text-sm">{new Date(o.deliveryDate).toLocaleDateString("vi-VN")}</span>
+                        <span className="text-xs text-white/50">{o.deliveryTime}</span>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-white/50">{formatDate(o.createdAt)} (Đặt)</span>
+                    )}
                   </td>
                   <td className="px-4 py-3 font-medium text-white">{formatPrice(o.totalPrice)}</td>
                   <td className="px-4 py-3">
@@ -162,7 +223,6 @@ export function AdminOrdersPage() {
                       <ChevronDown className="pointer-events-none absolute right-1.5 top-1/2 size-3 -translate-y-1/2" />
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-xs text-white/50">{formatDate(o.createdAt)}</td>
                   <td className="px-4 py-3">
                     <button
                       onClick={() => setSelectedOrder(o)}
@@ -207,6 +267,20 @@ export function AdminOrdersPage() {
                   {selectedOrder.shippingAddress.address}, {selectedOrder.shippingAddress.district},{" "}
                   {selectedOrder.shippingAddress.city}
                 </p>
+              </div>
+              <div className="rounded-xl bg-white/5 p-4">
+                <p className="mb-2 text-xs font-semibold uppercase text-white/40">Giao hàng lúc</p>
+                {selectedOrder.deliveryDate && selectedOrder.deliveryTime ? (
+                  <>
+                    <p className="text-sm text-white">Ngày: {new Date(selectedOrder.deliveryDate).toLocaleDateString("vi-VN")}</p>
+                    <p className="text-sm text-white/60">Khung giờ: {selectedOrder.deliveryTime}</p>
+                  </>
+                ) : (
+                  <p className="text-sm text-white/60">Giao tiêu chuẩn</p>
+                )}
+                {selectedOrder.shippingAddress.note && (
+                  <p className="mt-2 text-sm text-amber-300">Ghi chú: {selectedOrder.shippingAddress.note}</p>
+                )}
               </div>
               {/* Items */}
               <div>

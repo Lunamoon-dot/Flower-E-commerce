@@ -11,6 +11,7 @@ import { useCartStore } from "@/store/useCartStore"
 import { useAuthStore } from "@/store/useAuthStore"
 import { formatPrice } from "@/components/ProductCard"
 import { orderService } from "@/services/orderService"
+import { voucherService } from "@/services/voucherService"
 
 const checkoutSchema = z.object({
   fullName: z.string().min(2, "Vui lòng nhập họ tên"),
@@ -19,6 +20,8 @@ const checkoutSchema = z.object({
   city: z.string().min(2, "Vui lòng nhập thành phố"),
   district: z.string().min(2, "Vui lòng nhập quận/huyện"),
   note: z.string().optional(),
+  deliveryDate: z.string().min(1, "Vui lòng chọn ngày giao hàng"),
+  deliveryTime: z.string().min(1, "Vui lòng chọn khung giờ giao hàng"),
 })
 
 type CheckoutForm = z.infer<typeof checkoutSchema>
@@ -29,6 +32,10 @@ export function CheckoutPage() {
   const { user } = useAuthStore()
   const [paymentMethod, setPaymentMethod] = useState("cod")
   const [submitting, setSubmitting] = useState(false)
+  const [voucherCode, setVoucherCode] = useState("")
+  const [discountAmount, setDiscountAmount] = useState(0)
+  const [voucherError, setVoucherError] = useState("")
+  const [voucherSuccess, setVoucherSuccess] = useState("")
 
   const {
     register,
@@ -44,7 +51,8 @@ export function CheckoutPage() {
   }
 
   const shippingFee = totalPrice() >= 500000 ? 0 : 30000
-  const total = totalPrice() + shippingFee
+  const subTotal = totalPrice() + shippingFee
+  const total = Math.max(0, subTotal - discountAmount)
 
   const onSubmit = async (data: CheckoutForm) => {
     setSubmitting(true)
@@ -54,8 +62,18 @@ export function CheckoutPage() {
           product: item.product._id,
           quantity: item.quantity,
         })),
-        shippingAddress: data,
+        shippingAddress: {
+          fullName: data.fullName,
+          phone: data.phone,
+          address: data.address,
+          city: data.city,
+          district: data.district,
+          note: data.note,
+        },
         paymentMethod,
+        deliveryDate: data.deliveryDate,
+        deliveryTime: data.deliveryTime,
+        voucherCode: voucherSuccess ? voucherCode : undefined
       })
       clearCart()
       navigate("/orders")
@@ -63,6 +81,23 @@ export function CheckoutPage() {
       alert("Đặt hàng thất bại. Vui lòng thử lại.")
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  const handleApplyVoucher = async () => {
+    if (!voucherCode.trim()) return
+    setVoucherError("")
+    setVoucherSuccess("")
+    try {
+      const res = await voucherService.validateVoucher(voucherCode, totalPrice())
+      setDiscountAmount(res.discountAmount)
+      setVoucherSuccess("Áp dụng mã thành công!")
+      if (res.voucher.type === "freeship") {
+        setDiscountAmount(shippingFee) // simple freeship logic
+      }
+    } catch (err: any) {
+      setDiscountAmount(0)
+      setVoucherError(err.response?.data?.message || "Mã không hợp lệ")
     }
   }
 
@@ -146,6 +181,37 @@ export function CheckoutPage() {
                   )}
                 </div>
 
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-foreground">
+                    Ngày giao hàng
+                  </label>
+                  <Input type="date" {...register("deliveryDate")} />
+                  {errors.deliveryDate && (
+                    <p className="mt-1 text-xs text-destructive">{errors.deliveryDate.message}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-foreground">
+                    Khung giờ giao hàng
+                  </label>
+                  <select
+                    {...register("deliveryTime")}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <option value="">Chọn khung giờ</option>
+                    <option value="08:00 - 10:00">08:00 - 10:00</option>
+                    <option value="10:00 - 12:00">10:00 - 12:00</option>
+                    <option value="12:00 - 14:00">12:00 - 14:00</option>
+                    <option value="14:00 - 16:00">14:00 - 16:00</option>
+                    <option value="16:00 - 18:00">16:00 - 18:00</option>
+                    <option value="18:00 - 20:00">18:00 - 20:00</option>
+                  </select>
+                  {errors.deliveryTime && (
+                    <p className="mt-1 text-xs text-destructive">{errors.deliveryTime.message}</p>
+                  )}
+                </div>
+
                 <div className="sm:col-span-2">
                   <label className="mb-1.5 block text-sm font-medium text-foreground">
                     Ghi chú (tuỳ chọn)
@@ -206,6 +272,22 @@ export function CheckoutPage() {
                 </label>
               </div>
             </div>
+
+            {/* Voucher Section */}
+            <div className="rounded-xl border border-border/60 bg-card p-6">
+              <h2 className="mb-4 text-lg font-semibold text-foreground">Mã khuyến mãi</h2>
+              <div className="flex gap-2">
+                <Input 
+                  placeholder="Nhập mã voucher..." 
+                  value={voucherCode} 
+                  onChange={e => setVoucherCode(e.target.value)}
+                  className="uppercase uppercase"
+                />
+                <Button type="button" onClick={handleApplyVoucher} variant="secondary">Áp dụng</Button>
+              </div>
+              {voucherError && <p className="mt-2 text-sm text-red-500">{voucherError}</p>}
+              {voucherSuccess && <p className="mt-2 text-sm text-emerald-500">{voucherSuccess}</p>}
+            </div>
           </div>
 
           <div className="lg:col-span-1">
@@ -246,6 +328,12 @@ export function CheckoutPage() {
                   <span className="text-muted-foreground">Phí giao hàng</span>
                   <span>{shippingFee === 0 ? "Miễn phí" : formatPrice(shippingFee)}</span>
                 </div>
+                {discountAmount > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-emerald-500 font-medium">Khuyến mãi</span>
+                    <span className="text-emerald-500 font-medium">-{formatPrice(discountAmount)}</span>
+                  </div>
+                )}
               </div>
 
               <Separator className="my-4" />
