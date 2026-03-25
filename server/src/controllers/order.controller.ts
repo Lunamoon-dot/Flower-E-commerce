@@ -162,7 +162,7 @@ export const updateOrderStatus = async (
     const order = await Order.findByIdAndUpdate(
       req.params.id,
       { status },
-      { new: true }
+      { returnDocument: "after" }
     ).populate("user", "name email");
 
     if (!order) {

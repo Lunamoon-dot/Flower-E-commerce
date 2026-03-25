@@ -140,7 +140,7 @@ export const updateUserRole = async (
     const user = await User.findByIdAndUpdate(
       req.params.id,
       { role },
-      { new: true }
+      { returnDocument: "after" }
     ).select("-password");
     if (!user) {
       res.status(404).json({ message: "User not found" });
