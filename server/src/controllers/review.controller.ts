@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { Types } from "mongoose";
 import Review from "../models/Review";
 import Order from "../models/Order";
 import Product from "../models/Product";
@@ -9,38 +10,67 @@ import { logActivity } from "./log.controller";
 // @access  Private
 export const createReview = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { product: productId, rating, comment } = req.body;
-    // req.user exists because of protect middleware
-    const userId = (req as any).user._id;
+    const { product: productId, rating, comment, orderId } = req.body;
+    const userId = (req as any).user.id;
 
-    // Check if user has bought this product and order is 'delivered'
-    const hasBought = await Order.findOne({
-      user: userId,
-      status: "delivered",
-      "items.product": productId
-    });
-
-    if (!hasBought) {
-      res.status(400).json({ message: "Bạn chỉ có thể đánh giá sản phẩm sau khi đã nhận bánh thành công" });
+    // Cast to ObjectId
+    let userObjId: Types.ObjectId;
+    let productObjId: Types.ObjectId;
+    try {
+      userObjId = new Types.ObjectId(userId);
+      productObjId = new Types.ObjectId(productId as string);
+    } catch {
+      res.status(400).json({ message: "ID không hợp lệ" });
       return;
     }
 
-    // Check if already reviewed (optional depending on rules, let's allow 1 review per user per product)
-    const exists = await Review.findOne({ product: productId, user: userId });
+    // Validate: user must have a delivered order containing this product
+    let hasBought = null;
+    if (orderId && Types.ObjectId.isValid(orderId)) {
+      // Verify the specific order belongs to this user, is delivered, and contains the product
+      hasBought = await Order.findOne({
+        _id: new Types.ObjectId(orderId as string),
+        user: userObjId,
+        status: "delivered",
+        "items.product": productObjId
+      });
+    }
+    
+    if (!hasBought) {
+      // Fallback: check any delivered order
+      hasBought = await Order.findOne({
+        user: userObjId,
+        status: "delivered",
+        "items.product": productObjId
+      });
+    }
+
+    console.log("[createReview] userId:", userId, "productId:", productId, "orderId:", orderId, "hasBought:", hasBought?._id ?? null);
+
+    if (!hasBought) {
+      res.status(400).json({ message: "Bạn chỉ có thể đánh giá sản phẩm sau khi đã nhận hoa thành công" });
+      return;
+    }
+
+    // Check duplicate review
+    const exists = await Review.findOne({ product: productObjId, user: userObjId });
     if (exists) {
       res.status(400).json({ message: "Bạn đã đánh giá sản phẩm này" });
       return;
     }
 
     const review = await Review.create({
-      product: productId,
-      user: userId,
+      product: productObjId,
+      user: userObjId,
       rating,
       comment
     });
 
-    res.status(201).json(review);
+    const populated = await Review.findById(review._id).populate("user", "name avatar");
+    res.status(201).json(populated);
+
   } catch (error) {
+    console.error("[createReview] Error:", error);
     res.status(500).json({ message: "Failed to create review" });
   }
 };
@@ -128,24 +158,61 @@ export const updateReview = async (req: Request, res: Response): Promise<void> =
 // @access  Private
 export const canReview = async (req: Request, res: Response): Promise<void> => {
   try {
-    const userId = (req as any).user?._id;
+    const userId = (req as any).user?.id;
     if (!userId) {
       res.json({ canReview: false }); return;
     }
     const productId = req.params.productId;
+
+    let userObjId: Types.ObjectId;
+    let productObjId: Types.ObjectId;
+    try {
+      userObjId = new Types.ObjectId(userId as string);
+      productObjId = new Types.ObjectId(productId as string);
+    } catch {
+      res.json({ canReview: false }); return;
+    }
+
     const hasBought = await Order.findOne({
-      user: userId,
+      user: userObjId,
       status: "delivered",
-      "items.product": productId
+      "items.product": productObjId
     });
+
+    console.log("[canReview] userId:", userId, "productId:", productId, "hasBought:", hasBought?._id ?? null);
     
     if (!hasBought) {
       res.json({ canReview: false }); return;
     }
 
-    const exists = await Review.findOne({ product: productId, user: userId });
+    const exists = await Review.findOne({ product: productObjId, user: userObjId });
     res.json({ canReview: !exists });
   } catch (err) {
     res.json({ canReview: false });
+  }
+}
+
+// @desc    Get reviewed product IDs for a list of products (for current user)
+// @route   POST /api/reviews/reviewed-products
+// @access  Private
+export const getReviewedProductIds = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = (req as any).user?.id;
+    const { productIds } = req.body as { productIds: string[] };
+    if (!userId || !Array.isArray(productIds) || productIds.length === 0) {
+      res.json({ reviewedIds: [] }); return;
+    }
+    const userObjId = new Types.ObjectId(userId);
+    const productObjIds = productIds
+      .filter(id => Types.ObjectId.isValid(id))
+      .map(id => new Types.ObjectId(id));
+    const reviews = await Review.find({
+      user: userObjId,
+      product: { $in: productObjIds }
+    }).select("product");
+    const reviewedIds = reviews.map(r => r.product.toString());
+    res.json({ reviewedIds });
+  } catch {
+    res.json({ reviewedIds: [] });
   }
 }

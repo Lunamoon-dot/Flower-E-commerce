@@ -71,9 +71,11 @@ export function AdminOrdersPage() {
 
   const filtered = orders.filter((o) => {
     const matchStatus = filterStatus === "all" || o.status === filterStatus
+    const cleanSearch = search.startsWith("#") ? search.slice(1).toLowerCase() : search.toLowerCase()
+    
     const matchSearch =
-      o._id.toLowerCase().includes(search.toLowerCase()) ||
-      (typeof o.user === "object" && (o.user as any)?.name?.toLowerCase().includes(search.toLowerCase()))
+      o._id.toLowerCase().includes(cleanSearch) ||
+      (typeof o.user === "object" && (o.user as any)?.name?.toLowerCase().includes(cleanSearch))
       
     let matchDelivery = true
     if (filterDelivery !== "all" && o.deliveryDate) {
