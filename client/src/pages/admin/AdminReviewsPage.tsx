@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react"
 import { MessageSquare, Star, CheckCircle, XCircle } from "lucide-react"
 import { adminService } from "@/services/adminService"
-import type { Review } from "@/types"
+import type { Review, Order } from "@/types"
 
 export function AdminReviewsPage() {
   const [reviews, setReviews] = useState<Review[]>([])
   const [loading, setLoading] = useState(true)
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
+  const [orderModalOpen, setOrderModalOpen] = useState(false)
+  const [fetchingOrder, setFetchingOrder] = useState(false)
 
   const fetchReviews = async () => {
     setLoading(true)
@@ -36,6 +39,20 @@ export function AdminReviewsPage() {
       setReviews(prev => prev.map(r => r._id === id ? updated : r))
     } catch {
       alert("Lỗi")
+    }
+  }
+
+  const handleViewOrder = async (id: string) => {
+    setFetchingOrder(true)
+    setOrderModalOpen(true)
+    try {
+      const order = await adminService.getReviewOrder(id)
+      setSelectedOrder(order)
+    } catch {
+      alert("Không tìm thấy đơn hàng tương ứng")
+      setOrderModalOpen(false)
+    } finally {
+      setFetchingOrder(false)
     }
   }
 
@@ -101,14 +118,79 @@ export function AdminReviewsPage() {
                     </button>
                   )}
                 </div>
-                <button onClick={() => handleReply(r._id)} className="text-xs font-medium text-pink-400 hover:underline">
-                  {r.adminReply ? "Sửa phản hồi" : "Phản hồi"}
-                </button>
+                <div className="flex items-center gap-3">
+                  <button onClick={() => handleViewOrder(r._id)} className="text-xs font-medium text-blue-400 hover:underline">
+                    Chi tiết đơn
+                  </button>
+                  <button onClick={() => handleReply(r._id)} className="text-xs font-medium text-pink-400 hover:underline">
+                    {r.adminReply ? "Sửa phản hồi" : "Phản hồi"}
+                  </button>
+                </div>
               </div>
             </div>
           ))
         )}
       </div>
+
+      {/* Order Details Modal */}
+      {orderModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-[#1a1a24] border border-white/10 rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto p-6 relative">
+            <button 
+              onClick={() => { setOrderModalOpen(false); setSelectedOrder(null) }}
+              className="absolute top-4 right-4 text-white/40 hover:text-white"
+            >
+              <XCircle className="size-6" />
+            </button>
+            <h2 className="text-xl font-bold text-white mb-4">Chi tiết đặt đơn</h2>
+            {fetchingOrder ? (
+              <div className="text-white/40 py-8 text-center">Đang tải thông tin đơn hàng...</div>
+            ) : selectedOrder ? (
+              <div className="space-y-4">
+                <div className="bg-white/5 p-4 rounded-xl border border-white/5 space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-white/40">Mã đơn:</span>
+                    <span className="text-white font-mono">#{selectedOrder._id.slice(-8).toUpperCase()}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-white/40">Ngày đặt:</span>
+                    <span className="text-white">{new Date(selectedOrder.createdAt).toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-white/40">Ngày nhận:</span>
+                    <span className="text-white">{new Date(selectedOrder.deliveryDate).toLocaleDateString()} {selectedOrder.deliveryTime}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-white/40">Thanh toán:</span>
+                    <span className="text-white uppercase">{selectedOrder.paymentMethod}</span>
+                  </div>
+                  <div className="flex justify-between text-sm text-pink-400 font-bold border-t border-white/10 pt-2 mt-2">
+                    <span>Tổng tiền:</span>
+                    <span>{selectedOrder.totalPrice.toLocaleString()}đ</span>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-semibold text-white/80 mb-2">Sản phẩm đã mua:</h3>
+                  <div className="space-y-2 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
+                    {selectedOrder.items.map((item, idx) => (
+                      <div key={idx} className="flex gap-3 bg-white/5 rounded-lg p-2 items-center">
+                        <img src={item.image} alt={item.name} className="size-12 rounded object-cover" />
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm text-white truncate font-medium">{item.name}</div>
+                          <div className="text-xs text-white/40">{item.price.toLocaleString()}đ x {item.quantity}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="text-red-400 py-8 text-center text-sm">Lỗi không tải được đơn hàng</div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -121,6 +121,10 @@ export const adminService = {
     const { data } = await api.put(`/admin/reviews/${id}`, reviewData)
     return data
   },
+  getReviewOrder: async (id: string): Promise<Order> => {
+    const { data } = await api.get(`/admin/reviews/${id}/order`)
+    return data
+  },
 
   // Logs
   getLogs: async (): Promise<ActivityLog[]> => {

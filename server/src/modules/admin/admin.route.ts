@@ -1,22 +1,23 @@
 import { Router } from "express";
-import { protect, adminOnly, staffOnly, authorizeRoles } from "../middleware/auth";
-import { uploadImage, upload } from "../controllers/upload.controller";
+import { protect, authorizeRoles, staffOnly, adminOnly } from "../../shared/middleware/auth";
+
+import { uploadImage, upload } from "../upload/upload.controller";
 import {
   getDashboardStats,
   getAllUsers,
   updateUserRole,
   deleteUser,
-} from "../controllers/admin.controller";
-import { getAllOrders, updateOrderStatus } from "../controllers/order.controller";
+} from "./admin.controller";
+import { getAllOrders, updateOrderStatus } from "../order/order.controller";
 import {
   getProducts,
   createProduct,
   updateProduct,
   deleteProduct,
-} from "../controllers/product.controller";
-import { getVouchers, createVoucher, updateVoucher, deleteVoucher } from "../controllers/voucher.controller";
-import { getAllReviews, updateReview } from "../controllers/review.controller";
-import { getLogs } from "../controllers/log.controller";
+} from "../product/product.controller";
+import { getVouchers, createVoucher, updateVoucher, deleteVoucher } from "../voucher/voucher.controller";
+import { getAllReviews, updateReview, getReviewOrderDetails } from "../review/review.controller";
+import { getLogs } from "../log/log.controller";
 
 const router = Router();
 
@@ -38,7 +39,7 @@ router.delete("/users/:id", authorizeRoles("superadmin"), deleteUser);
 router.get("/orders", staffOnly, getAllOrders);
 router.put("/orders/:id/status", staffOnly, updateOrderStatus);
 
-// Products (full CRUD via admin route)
+// Products
 router.get("/products", staffOnly, getProducts);
 router.post("/products", staffOnly, createProduct);
 router.put("/products/:id", staffOnly, updateProduct);
@@ -53,6 +54,7 @@ router.delete("/vouchers/:id", adminOnly, deleteVoucher);
 // Reviews
 router.get("/reviews", adminOnly, getAllReviews);
 router.put("/reviews/:id", adminOnly, updateReview);
+router.get("/reviews/:id/order", adminOnly, getReviewOrderDetails);
 
 // Logs
 router.get("/logs", authorizeRoles("superadmin", "admin"), getLogs);

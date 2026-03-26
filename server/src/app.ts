@@ -1,19 +1,19 @@
 import dotenv from "dotenv";
-dotenv.config(); // Phải gọi TRƯỚC tất cả các import khác để env vars sẵn sàng
+dotenv.config();
 
 import express, { Request, Response } from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import connectDB from "./config/db";
-import authRoutes from "./routes/auth.routes";
-import productRoutes from "./routes/product.routes";
-import orderRoutes from "./routes/order.routes";
-import adminRoutes from "./routes/admin.routes";
-import voucherRoutes from "./routes/voucher.routes";
-import reviewRoutes from "./routes/review.routes";
+
+// Note: These imports will be updated in Phase 5 to point to src/modules
+import authRoutes from "./modules/auth/auth.route";
+import productRoutes from "./modules/product/product.route";
+import orderRoutes from "./modules/order/order.route";
+import adminRoutes from "./modules/admin/admin.route";
+import voucherRoutes from "./modules/voucher/voucher.route";
+import reviewRoutes from "./modules/review/review.route";
 
 const app = express();
-const PORT = process.env.PORT || 4000;
 
 app.use(
   cors({
@@ -38,12 +38,6 @@ app.get("/", (_req: Request, res: Response) => {
 
 app.get("/api/health", (_req: Request, res: Response) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
-});
-
-connectDB().then(() => {
-  app.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
-  });
 });
 
 export default app;

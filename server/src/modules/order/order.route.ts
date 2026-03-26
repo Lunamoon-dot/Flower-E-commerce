@@ -4,8 +4,8 @@ import {
   getUserOrders,
   getAllOrders,
   updateOrderStatus,
-} from "../controllers/order.controller";
-import { protect, adminOnly } from "../middleware/auth";
+} from "./order.controller";
+import { protect, adminOnly } from "../../shared/middleware/auth";
 
 const router = Router();
 

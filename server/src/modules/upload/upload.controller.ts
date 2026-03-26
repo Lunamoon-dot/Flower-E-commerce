@@ -1,7 +1,7 @@
 import { v2 as cloudinary } from "cloudinary";
 import multer from "multer";
 import { Response } from "express";
-import { AuthRequest } from "../middleware/auth";
+import { AuthRequest } from "../../shared/middleware/auth";
 
 // multer v2: dùng multer.memoryStorage()
 export const upload = multer({

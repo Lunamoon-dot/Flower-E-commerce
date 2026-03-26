@@ -5,8 +5,8 @@ import {
   createProduct,
   updateProduct,
   deleteProduct,
-} from "../controllers/product.controller";
-import { protect, adminOnly } from "../middleware/auth";
+} from "./product.controller";
+import { protect, adminOnly } from "../../shared/middleware/auth";
 
 const router = Router();
 

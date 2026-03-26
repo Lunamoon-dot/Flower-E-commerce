@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { protect } from "../middleware/auth";
-import { createReview, getProductReviews, canReview, getReviewedProductIds } from "../controllers/review.controller";
+import { protect } from "../../shared/middleware/auth";
+import { createReview, getProductReviews, canReview, getReviewedProductIds } from "./review.controller";
 
 const router = Router();
 
