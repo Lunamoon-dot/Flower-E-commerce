@@ -68,4 +68,10 @@ const productSchema = new Schema<IProduct>(
   { timestamps: true }
 );
 
+productSchema.index({ category: 1 });
+productSchema.index({ featured: 1 });
+productSchema.index({ createdAt: -1 });
+productSchema.index({ rating: -1 });
+productSchema.index({ price: 1 });
+
 export default mongoose.model<IProduct>("Product", productSchema);

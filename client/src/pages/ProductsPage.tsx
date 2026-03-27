@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react"
+import { useState } from "react"
+import { useQuery } from "@tanstack/react-query"
 import { useSearchParams } from "react-router-dom"
 import { SlidersHorizontal } from "lucide-react"
 import { ProductCard } from "@/components/ProductCard"
@@ -7,43 +8,32 @@ import { CategoryFilter } from "@/components/CategoryFilter"
 import { SearchBar } from "@/components/SearchBar"
 import { useDebounce } from "@/hooks/useDebounce"
 import { Button } from "@/components/ui/button"
-import type { Product, ProductFilters } from "@/types"
+import type { ProductFilters } from "@/types"
 import { productService } from "@/services/productService"
 
 type SortOption = "newest" | "price_asc" | "price_desc" | "rating"
 
 export function ProductsPage() {
   const [searchParams, setSearchParams] = useSearchParams()
-  const [products, setProducts] = useState<Product[]>([])
-  const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState(searchParams.get("search") || "")
   const [sort, setSort] = useState<SortOption>("newest")
   const [showFilters, setShowFilters] = useState(false)
-  const [totalCount, setTotalCount] = useState(0)
 
   const category = searchParams.get("category") || ""
   const debouncedSearch = useDebounce(search)
 
-  useEffect(() => {
-    const fetchProducts = async () => {
-      setLoading(true)
-      try {
-        const filters: ProductFilters = { sort }
-        if (category) filters.category = category as any
-        if (debouncedSearch) filters.search = debouncedSearch
+  const { data, isLoading } = useQuery({
+    queryKey: ["products", { category, search: debouncedSearch, sort }],
+    queryFn: async () => {
+      const filters: ProductFilters = { sort }
+      if (category) filters.category = category as any
+      if (debouncedSearch) filters.search = debouncedSearch
+      return await productService.getAll(filters)
+    },
+  })
 
-        const result = await productService.getAll(filters)
-        setProducts(result.data)
-        setTotalCount(result.total)
-      } catch {
-        setProducts([])
-        setTotalCount(0)
-      } finally {
-        setLoading(false)
-      }
-    }
-    fetchProducts()
-  }, [category, debouncedSearch, sort])
+  const products = data?.data || []
+  const totalCount = data?.total || 0
 
   const handleCategoryChange = (cat: string) => {
     const params = new URLSearchParams(searchParams)
@@ -99,7 +89,7 @@ export function ProductsPage() {
         <CategoryFilter selected={category} onChange={handleCategoryChange} />
       </div>
 
-      {loading ? (
+      {isLoading ? (
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {Array.from({ length: 8 }).map((_, i) => (
             <ProductCardSkeleton key={i} />

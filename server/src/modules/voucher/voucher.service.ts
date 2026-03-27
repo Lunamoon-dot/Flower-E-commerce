@@ -1,12 +1,23 @@
 import * as voucherRepository from "./voucher.repository";
+import { sanitize } from "../../shared/utils/sanitizer";
 
-export const getVouchers = async () => {
-  return await voucherRepository.getVouchers();
+export const getVouchers = async (page = 1, limit = 20) => {
+  const [data, total] = await Promise.all([
+    voucherRepository.getVouchers(page, limit),
+    voucherRepository.countVouchers(),
+  ]);
+
+  return {
+    data,
+    total,
+    page,
+    totalPages: Math.ceil(total / limit),
+  };
 };
 
 export const createVoucher = async (data: any) => {
   const { code, type, value, minOrderValue, startDate, endDate, usageLimit } = data;
-  const upperCode = code.toUpperCase();
+  const upperCode = sanitize(code).toUpperCase();
   
   const exists = await voucherRepository.findVoucherByCode(upperCode);
   if (exists) {

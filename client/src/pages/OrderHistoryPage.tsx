@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import type { Order, OrderStatus } from "@/types"
 import { orderService } from "@/services/orderService"
 import { reviewService } from "@/services/reviewService"
-import { formatPrice } from "@/components/ProductCard"
+import { formatPrice } from "@/lib/utils"
 
 const STATUS_MAP: Record<OrderStatus, { label: string; className: string }> = {
   pending: { label: "Chờ xác nhận", className: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" },

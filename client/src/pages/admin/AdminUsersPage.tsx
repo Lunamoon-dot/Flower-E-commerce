@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { Search, Trash2, X, Check } from "lucide-react"
+import { Users, Search, Trash2, X, Check } from "lucide-react"
 import { adminService, type AdminUser } from "@/services/adminService"
 import { useAuthStore } from "@/store/useAuthStore"
 
@@ -16,6 +16,10 @@ export function AdminUsersPage() {
   const [users, setUsers] = useState<AdminUser[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalItems, setTotalItems] = useState(0)
+  const limit = 20
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [toast, setToast] = useState<{ msg: string; type: "success" | "error" } | null>(null)
 
@@ -24,13 +28,23 @@ export function AdminUsersPage() {
     setTimeout(() => setToast(null), 3000)
   }
 
+  const loadUsers = async (page = currentPage) => {
+    setLoading(true)
+    try {
+      const res = await adminService.getUsers(page, limit)
+      setUsers(res.data)
+      setTotalPages(res.totalPages)
+      setTotalItems(res.total)
+    } catch {
+      showToast("Không thể tải danh sách người dùng", "error")
+    } finally {
+      setLoading(false)
+    }
+  }
+
   useEffect(() => {
-    adminService
-      .getUsers()
-      .then(setUsers)
-      .catch(() => showToast("Không thể tải danh sách người dùng", "error"))
-      .finally(() => setLoading(false))
-  }, [])
+    loadUsers(currentPage)
+  }, [currentPage])
 
   const handleChangeRole = async (user: AdminUser, newRole: string) => {
     if (user._id === currentUser?.id) {
@@ -86,8 +100,11 @@ export function AdminUsersPage() {
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-white">Người dùng</h1>
-          <p className="text-sm text-white/40">{users.length} người dùng</p>
+          <h1 className="text-2xl font-bold p-2 text-white flex items-center gap-2">
+            <Users className="size-6 text-blue-500" />
+            Danh sách người dùng ({totalItems})
+          </h1>
+          <p className="text-sm text-white/40">Quản lý và cấp quyền người dùng hệ thống</p>
         </div>
         <div className="flex gap-2">
           <span className="rounded-full bg-pink-500/10 px-3 py-1 text-xs font-medium text-pink-400 ring-1 ring-pink-500/20">
@@ -202,6 +219,31 @@ export function AdminUsersPage() {
           </table>
         )}
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between px-2 py-4">
+          <p className="text-xs text-white/40">
+            Trang {currentPage} / {totalPages}
+          </p>
+          <div className="flex gap-2">
+            <button
+              disabled={currentPage === 1 || loading}
+              onClick={() => setCurrentPage((p) => p - 1)}
+              className="rounded-lg border border-white/10 px-3 py-1.5 text-xs font-medium text-white/60 hover:bg-white/5 disabled:opacity-30"
+            >
+              Trước
+            </button>
+            <button
+              disabled={currentPage === totalPages || loading}
+              onClick={() => setCurrentPage((p) => p + 1)}
+              className="rounded-lg border border-white/10 px-3 py-1.5 text-xs font-medium text-white/60 hover:bg-white/5 disabled:opacity-30"
+            >
+              Tiếp
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Delete confirm */}
       {deleteId && (

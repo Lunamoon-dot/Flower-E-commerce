@@ -95,8 +95,19 @@ export const getDashboardStats = async () => {
   };
 };
 
-export const getAllUsers = async () => {
-  return User.find().select("-password").sort({ createdAt: -1 }).exec();
+export const getAllUsers = async (page = 1, limit = 20) => {
+  const skip = (page - 1) * limit;
+  const [users, total] = await Promise.all([
+    User.find().select("-password").sort({ createdAt: -1 }).skip(skip).limit(limit).lean().exec(),
+    User.countDocuments(),
+  ]);
+
+  return {
+    data: users,
+    total,
+    page,
+    totalPages: Math.ceil(total / limit),
+  };
 };
 
 export const updateUserRole = async (id: string, role: string) => {

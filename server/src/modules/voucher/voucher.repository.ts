@@ -1,7 +1,17 @@
 import Voucher, { IVoucher } from "./voucher.model";
 
-export const getVouchers = async () => {
-  return Voucher.find({}).sort({ createdAt: -1 }).lean().exec();
+export const getVouchers = async (page = 1, limit = 20) => {
+  const skip = (page - 1) * limit;
+  return Voucher.find({})
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(limit)
+    .lean()
+    .exec();
+};
+
+export const countVouchers = async () => {
+  return Voucher.countDocuments();
 };
 
 export const findVoucherByCode = async (code: string) => {

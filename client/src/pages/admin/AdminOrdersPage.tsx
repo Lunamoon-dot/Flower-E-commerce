@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react"
-import { Search, ChevronDown, X, Check } from "lucide-react"
+import { Search, ChevronDown, Package, X, Check } from "lucide-react"
 import { adminService } from "@/services/adminService"
 import type { Order, OrderStatus } from "@/types"
+import { stripTags, formatPrice } from "@/lib/utils"
 
 const STATUS_LABELS: Record<OrderStatus, string> = {
   pending: "Chờ xử lý",
@@ -21,9 +22,7 @@ const STATUS_COLORS: Record<OrderStatus, string> = {
 
 const ALL_STATUSES: OrderStatus[] = ["pending", "processing", "shipped", "delivered", "cancelled"]
 
-function formatPrice(n: number) {
-  return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(n)
-}
+
 
 function formatDate(d: string) {
   return new Date(d).toLocaleDateString("vi-VN", {
@@ -39,10 +38,15 @@ export function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalItems, setTotalItems] = useState(0)
+  const limit = 20
   const [filterStatus, setFilterStatus] = useState<OrderStatus | "all">("all")
   const [filterDelivery, setFilterDelivery] = useState<"all" | "today" | "tomorrow">("all")
   const [sortBy, setSortBy] = useState<"createdAt" | "deliveryDate">("createdAt")
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
+  const [detailLoading, setDetailLoading] = useState(false)
   const [toast, setToast] = useState<{ msg: string; type: "success" | "error" } | null>(null)
 
   const showToast = (msg: string, type: "success" | "error" = "success") => {
@@ -50,13 +54,23 @@ export function AdminOrdersPage() {
     setTimeout(() => setToast(null), 3000)
   }
 
+  const loadOrders = async (page = currentPage) => {
+    setLoading(true)
+    try {
+      const res = await adminService.getOrders(page, limit)
+      setOrders(res.data)
+      setTotalPages(res.totalPages)
+      setTotalItems(res.total)
+    } catch {
+      showToast("Không thể tải đơn hàng", "error")
+    } finally {
+      setLoading(false)
+    }
+  }
+
   useEffect(() => {
-    adminService
-      .getOrders()
-      .then(setOrders)
-      .catch(() => showToast("Không thể tải đơn hàng", "error"))
-      .finally(() => setLoading(false))
-  }, [])
+    loadOrders(currentPage)
+  }, [currentPage])
 
   const handleStatusChange = async (orderId: string, status: OrderStatus) => {
     try {
@@ -66,6 +80,19 @@ export function AdminOrdersPage() {
       showToast("Cập nhật trạng thái thành công!")
     } catch {
       showToast("Cập nhật thất bại", "error")
+    }
+  }
+
+  const handleViewDetail = async (orderId: string) => {
+    setSelectedOrder(orders.find(o => o._id === orderId) || null)
+    setDetailLoading(true)
+    try {
+      const fullOrder = await adminService.getOrder(orderId)
+      setSelectedOrder(fullOrder)
+    } catch {
+      showToast("Không thể tải chi tiết đơn hàng", "error")
+    } finally {
+      setDetailLoading(false)
     }
   }
 
@@ -121,8 +148,11 @@ export function AdminOrdersPage() {
 
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-white">Đơn hàng</h1>
-        <p className="text-sm text-white/40">{orders.length} đơn hàng</p>
+        <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+          <Package className="size-6 text-pink-500" />
+          Quản lý đơn hàng ({totalItems})
+        </h1>
+        <p className="text-sm text-white/40">Xem và xử lý các đơn đặt hoa từ khách hàng</p>
       </div>
 
       {/* Filters */}
@@ -227,7 +257,7 @@ export function AdminOrdersPage() {
                   </td>
                   <td className="px-4 py-3">
                     <button
-                      onClick={() => setSelectedOrder(o)}
+                      onClick={() => handleViewDetail(o._id)}
                       className="rounded-lg bg-white/5 px-3 py-1.5 text-xs text-white/60 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-white/10"
                     >
                       Chi tiết
@@ -247,6 +277,31 @@ export function AdminOrdersPage() {
         )}
       </div>
 
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between px-2 py-4">
+          <p className="text-xs text-white/40">
+            Trang {currentPage} / {totalPages}
+          </p>
+          <div className="flex gap-2">
+            <button
+              disabled={currentPage === 1 || loading}
+              onClick={() => setCurrentPage((p) => p - 1)}
+              className="rounded-lg border border-white/10 px-3 py-1.5 text-xs font-medium text-white/60 hover:bg-white/5 disabled:opacity-30"
+            >
+              Trước
+            </button>
+            <button
+              disabled={currentPage === totalPages || loading}
+              onClick={() => setCurrentPage((p) => p + 1)}
+              className="rounded-lg border border-white/10 px-3 py-1.5 text-xs font-medium text-white/60 hover:bg-white/5 disabled:opacity-30"
+            >
+              Tiếp
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Order detail modal */}
       {selectedOrder && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
@@ -259,15 +314,39 @@ export function AdminOrdersPage() {
                 <X className="size-5" />
               </button>
             </div>
-            <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+            <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto relative">
+              {detailLoading && (
+                <div className="absolute inset-0 z-10 flex items-center justify-center bg-[#1a1a24]/50 backdrop-blur-[2px]">
+                   <div className="size-8 animate-spin rounded-full border-2 border-pink-500 border-t-transparent" />
+                </div>
+              )}
+              
+              {/* Customer info */}
+              <div className="rounded-xl bg-white/5 p-4">
+                <p className="mb-2 text-xs font-semibold uppercase text-white/40">Tài khoản khách hàng</p>
+                <div className="flex items-center gap-3">
+                  <div className="size-8 rounded-full bg-pink-500/20 flex items-center justify-center text-pink-400 text-xs font-bold">
+                    {(typeof selectedOrder.user === 'object' ? (selectedOrder.user as any)?.name?.[0] : '?')?.toUpperCase()}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-white">
+                      {typeof selectedOrder.user === 'object' ? (selectedOrder.user as any)?.name : 'Khách vãng lai'}
+                    </p>
+                    <p className="text-xs text-white/40">
+                      {typeof selectedOrder.user === 'object' ? (selectedOrder.user as any)?.email : ''}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               {/* Shipping address */}
               <div className="rounded-xl bg-white/5 p-4">
-                <p className="mb-2 text-xs font-semibold uppercase text-white/40">Địa chỉ giao hàng</p>
-                <p className="text-sm text-white">{selectedOrder.shippingAddress.fullName}</p>
-                <p className="text-sm text-white/60">{selectedOrder.shippingAddress.phone}</p>
+                <p className="mb-2 text-xs font-semibold uppercase text-white/40">Địa chỉ giao hàng (Người nhận)</p>
+                <p className="text-sm text-white">{stripTags(selectedOrder.shippingAddress.fullName)}</p>
+                <p className="text-sm text-white/60">{stripTags(selectedOrder.shippingAddress.phone)}</p>
                 <p className="text-sm text-white/60">
-                  {selectedOrder.shippingAddress.address}, {selectedOrder.shippingAddress.district},{" "}
-                  {selectedOrder.shippingAddress.city}
+                  {stripTags(selectedOrder.shippingAddress.address)}, {stripTags(selectedOrder.shippingAddress.district)},{" "}
+                  {stripTags(selectedOrder.shippingAddress.city)}
                 </p>
               </div>
               <div className="rounded-xl bg-white/5 p-4">
@@ -281,7 +360,7 @@ export function AdminOrdersPage() {
                   <p className="text-sm text-white/60">Giao tiêu chuẩn</p>
                 )}
                 {selectedOrder.shippingAddress.note && (
-                  <p className="mt-2 text-sm text-amber-300">Ghi chú: {selectedOrder.shippingAddress.note}</p>
+                  <p className="mt-2 text-sm text-amber-300">Ghi chú: {stripTags(selectedOrder.shippingAddress.note)}</p>
                 )}
               </div>
               {/* Items */}

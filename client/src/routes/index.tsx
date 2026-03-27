@@ -19,7 +19,6 @@ import { AdminUsersPage } from "@/pages/admin/AdminUsersPage"
 import { AdminVouchersPage } from "@/pages/admin/AdminVouchersPage"
 import { AdminReviewsPage } from "@/pages/admin/AdminReviewsPage"
 import { AdminLogsPage } from "@/pages/admin/AdminLogsPage"
-// Force TS update
 export const router = createBrowserRouter([
   {
     element: <MainLayout />,

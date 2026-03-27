@@ -4,6 +4,7 @@ import type { Product } from "@/types"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useCartStore } from "@/store/useCartStore"
+import { formatPrice } from "@/lib/utils"
 
 interface ProductCardProps {
   product: Product
@@ -19,12 +20,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   mixed: "Hoa tổng hợp",
 }
 
-export function formatPrice(price: number) {
-  return new Intl.NumberFormat("vi-VN", {
-    style: "currency",
-    currency: "VND",
-  }).format(price)
-}
+
 
 export function ProductCard({ product }: ProductCardProps) {
   const addToCart = useCartStore((s) => s.addToCart)

@@ -3,6 +3,7 @@ import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { Plus, Pencil, Trash2, Search, Star, X, Check, Upload, ImagePlus, Loader2 } from "lucide-react"
+import { formatPrice } from "@/lib/utils"
 import { useAuthStore } from "@/store/useAuthStore"
 import { adminService } from "@/services/adminService"
 import api from "@/services/api"
@@ -17,9 +18,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   orchids: "Hoa lan", sunflowers: "Hướng dương", lilies: "Hoa ly", mixed: "Hoa tổng hợp",
 }
 
-function formatPrice(n: number) {
-  return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(n)
-}
+
 
 /* ─── Zod Schema ────────────────────────────────────────────────── */
 const productSchema = z.object({
@@ -165,6 +164,11 @@ export function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalItems, setTotalItems] = useState(0)
+  const limit = 20
+
   const { user: currentUser } = useAuthStore()
   const canManageProducts = currentUser && ["admin", "superadmin", "salestaff"].includes(currentUser.role)
   const canDeleteProducts = currentUser && ["admin", "superadmin"].includes(currentUser.role)
@@ -194,11 +198,13 @@ export function AdminProductsPage() {
   const watchImages = watch("images")
   const watchFeatured = watch("featured")
 
-  const loadProducts = async () => {
+  const loadProducts = async (page = currentPage) => {
     setLoading(true)
     try {
-      const res = await adminService.getProducts()
-      setProducts(res.products)
+      const res = await adminService.getProducts(page, limit)
+      setProducts(res.data)
+      setTotalPages(res.totalPages)
+      setTotalItems(res.total)
     } catch {
       showToast("Không thể tải sản phẩm", "error")
     } finally {
@@ -206,7 +212,7 @@ export function AdminProductsPage() {
     }
   }
 
-  useEffect(() => { loadProducts() }, [])
+  useEffect(() => { loadProducts(currentPage) }, [currentPage])
 
   const openCreate = () => {
     setEditProduct(null)
@@ -274,7 +280,7 @@ export function AdminProductsPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-white">Sản phẩm</h1>
-          <p className="text-sm text-white/40">{products.length} sản phẩm</p>
+          <p className="text-sm text-white/40">{totalItems} sản phẩm</p>
         </div>
         {canManageProducts && (
           <button
@@ -366,6 +372,31 @@ export function AdminProductsPage() {
           </table>
         )}
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between px-2 py-4">
+          <p className="text-xs text-white/40">
+            Trang {currentPage} / {totalPages}
+          </p>
+          <div className="flex gap-2">
+            <button
+              disabled={currentPage === 1 || loading}
+              onClick={() => setCurrentPage((p) => p - 1)}
+              className="rounded-lg border border-white/10 px-3 py-1.5 text-xs font-medium text-white/60 hover:bg-white/5 disabled:opacity-30"
+            >
+              Trước
+            </button>
+            <button
+              disabled={currentPage === totalPages || loading}
+              onClick={() => setCurrentPage((p) => p + 1)}
+              className="rounded-lg border border-white/10 px-3 py-1.5 text-xs font-medium text-white/60 hover:bg-white/5 disabled:opacity-30"
+            >
+              Tiếp
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Delete confirm */}
       {deleteId && (

@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import { useCartStore } from "@/store/useCartStore"
 import { useAuthStore } from "@/store/useAuthStore"
-import { formatPrice } from "@/components/ProductCard"
+import { formatPrice } from "@/lib/utils"
 import { orderService } from "@/services/orderService"
 import { voucherService } from "@/services/voucherService"
 

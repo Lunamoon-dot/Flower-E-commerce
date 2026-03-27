@@ -17,13 +17,20 @@ export const getReviewsForProduct = async (productId: string) => {
     .exec();
 };
 
-export const getAllReviews = async () => {
+export const getAllReviews = async (page = 1, limit = 20) => {
+  const skip = (page - 1) * limit;
   return Review.find({})
     .populate("user", "name email")
     .populate("product", "name image")
     .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(limit)
     .lean()
     .exec();
+};
+
+export const countReviews = async () => {
+  return Review.countDocuments();
 };
 
 export const getReviewById = async (id: string) => {

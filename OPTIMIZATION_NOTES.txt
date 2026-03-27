@@ -1,0 +1,53 @@
+Flower-E-commerce — Gợi ý tối ưu & vị trí code/thành phần dư thừa
+
+1) Quick wins (ưu tiên cao)
+- Chuẩn hóa auth token storage:
+  - Hiện tại backend hỗ trợ cookie + Bearer header, nhưng frontend chỉ dùng localStorage Bearer.
+  - Nên chọn 1 chiến lược chính (ưu tiên HTTP-only cookie để giảm rủi ro XSS).
+- Giảm duplicate endpoint admin/domain:
+  - Có cả /api/orders và /api/admin/orders cùng gọi nghiệp vụ order admin.
+  - Nên thống nhất gateway route để giảm nhầm lẫn và giảm chi phí bảo trì tài liệu API.
+- Tăng type safety backend:
+  - Nhiều service/repository vẫn dùng `any` (ví dụ query/data trong product.service).
+  - Nên thêm DTO/type riêng để giảm bug runtime.
+
+2) Tối ưu hiệu năng
+- Product listing:
+  - Xem xét thêm index MongoDB cho các trường lọc/sort thường dùng: category, featured, createdAt, rating, price.
+- API pagination:
+  - Với màn admin sản phẩm đang hard-limit=100, cân nhắc server-side pagination thực sự theo page + cursor/offset rõ ràng.
+- Client caching:
+  - Các request read-heavy (products, dashboard) có thể thêm cache layer (React Query hoặc cache thủ công theo key).
+
+3) Cần dọn code/thành phần dư thừa
+- Artefact/debug file ở root và server:
+  - debug_orders.mjs
+  - server/test-login.js
+  - server/test_products.json
+  - server/errors.txt
+  - server/test_logs.txt
+  - server/typescript_errors.txt
+  -> Nên chuyển vào thư mục docs/debug-archive hoặc xóa nếu không còn dùng.
+
+- Comment cũ gây nhiễu:
+  - server/src/app.ts còn comment "imports will be updated in Phase 5" không còn đúng trạng thái hiện tại.
+  - client/src/routes/index.tsx có comment "Force TS update" không mang ý nghĩa nghiệp vụ.
+
+- Dependency khả năng dư/thừa cần xác minh:
+  - client/package.json có @types/react-router-dom (v5) trong khi đang dùng react-router-dom v7.
+  - Nên kiểm tra có còn cần không; thường với v6+ typings đi kèm package.
+
+4) Cải thiện chất lượng mã
+- Chuẩn hóa response contract:
+  - Hiện product API trả cả `products` và `data` để tương thích ngược.
+  - Đặt lộ trình deprecate field cũ, chốt schema duy nhất và version hóa API nếu cần.
+- Error handling nhất quán:
+  - Hiện nhiều controller dùng thông điệp generic + status code thủ công.
+  - Nên có error class chuẩn và middleware xử lý lỗi tập trung.
+- Logging/Audit:
+  - Đang log activity tại một số CRUD quan trọng; mở rộng chính sách thống nhất cho update role, voucher, review moderation.
+
+5) Đề xuất kế hoạch triển khai
+- Phase A (1-2 ngày): dọn file artefact + comment thừa + rà dependency dư.
+- Phase B (2-4 ngày): chuẩn hóa typing backend DTO + error middleware.
+- Phase C (3-5 ngày): hợp nhất API contract + tối ưu DB index + caching read-heavy endpoints.

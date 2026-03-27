@@ -1,17 +1,22 @@
 import { useEffect, useState } from "react"
 import { TerminalSquare, RefreshCcw } from "lucide-react"
 import { adminService } from "@/services/adminService"
-import type { ActivityLog } from "@/types"
 
 export function AdminLogsPage() {
-  const [logs, setLogs] = useState<ActivityLog[]>([])
+  const [logs, setLogs] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalItems, setTotalItems] = useState(0)
+  const limit = 20
 
-  const fetchLogs = async () => {
+  const loadLogs = async (page = currentPage) => {
     setLoading(true)
     try {
-      const data = await adminService.getLogs()
-      setLogs(data)
+      const res = await adminService.getLogs(page, limit)
+      setLogs(res.data)
+      setTotalPages(res.totalPages)
+      setTotalItems(res.total)
     } catch {
       //
     } finally {
@@ -20,8 +25,8 @@ export function AdminLogsPage() {
   }
 
   useEffect(() => {
-    fetchLogs()
-  }, [])
+    loadLogs(currentPage)
+  }, [currentPage])
 
   return (
     <div className="space-y-5">
@@ -31,10 +36,10 @@ export function AdminLogsPage() {
             <TerminalSquare className="size-6 text-pink-500" />
             Lịch sử thao tác
           </h1>
-          <p className="text-sm text-white/40">Xem nhật ký hoạt động từ Admin</p>
+          <p className="text-sm text-white/40">{totalItems} nhật ký hoạt động</p>
         </div>
         <button
-          onClick={fetchLogs}
+          onClick={() => loadLogs(1)}
           disabled={loading}
           className="flex items-center gap-2 rounded-xl bg-white/5 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-white/10 disabled:opacity-50"
         >
@@ -89,6 +94,31 @@ export function AdminLogsPage() {
           </table>
         )}
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between px-2 py-4">
+          <p className="text-xs text-white/40">
+            Trang {currentPage} / {totalPages}
+          </p>
+          <div className="flex gap-2">
+            <button
+              disabled={currentPage === 1 || loading}
+              onClick={() => setCurrentPage((p) => p - 1)}
+              className="rounded-lg border border-white/10 px-3 py-1.5 text-xs font-medium text-white/60 hover:bg-white/5 disabled:opacity-30"
+            >
+              Trước
+            </button>
+            <button
+              disabled={currentPage === totalPages || loading}
+              onClick={() => setCurrentPage((p) => p + 1)}
+              className="rounded-lg border border-white/10 px-3 py-1.5 text-xs font-medium text-white/60 hover:bg-white/5 disabled:opacity-30"
+            >
+              Tiếp
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

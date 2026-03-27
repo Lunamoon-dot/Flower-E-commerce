@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { CartItem } from "@/components/CartItem"
 import { useCartStore } from "@/store/useCartStore"
-import { formatPrice } from "@/components/ProductCard"
+import { formatPrice } from "@/lib/utils"
 
 export function CartPage() {
   const { cart, totalPrice, totalItems, clearCart } = useCartStore()

@@ -13,10 +13,12 @@ export const getDashboardStats = async (_req: AuthRequest, res: Response): Promi
   }
 };
 
-export const getAllUsers = async (_req: AuthRequest, res: Response): Promise<void> => {
+export const getAllUsers = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const users = await adminService.getAllUsers();
-    res.json(users);
+    const page = parseInt(req.query.page as string, 10) || 1;
+    const limit = parseInt(req.query.limit as string, 10) || 20;
+    const result = await adminService.getAllUsers(page, limit);
+    res.json(result);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to fetch users";
     res.status(500).json({ message });

@@ -8,7 +8,7 @@ import {
   updateUserRole,
   deleteUser,
 } from "./admin.controller";
-import { getAllOrders, updateOrderStatus } from "../order/order.controller";
+import { getAllOrders, updateOrderStatus, getOrderById } from "../order/order.controller";
 import {
   getProducts,
   createProduct,
@@ -37,6 +37,7 @@ router.delete("/users/:id", authorizeRoles("superadmin"), deleteUser);
 
 // Orders
 router.get("/orders", staffOnly, getAllOrders);
+router.get("/orders/:id", staffOnly, getOrderById);
 router.put("/orders/:id/status", staffOnly, updateOrderStatus);
 
 // Products

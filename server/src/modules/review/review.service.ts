@@ -2,6 +2,7 @@ import * as reviewRepository from "./review.repository";
 import { Types } from "mongoose";
 import Order from "../order/order.model"; // Using Order model
 import Product from "../product/product.model"; // Using Product model
+import { sanitize } from "../../shared/utils/sanitizer";
 
 export const createReview = async (userId: string, data: any) => {
   const { product: productId, rating, comment, orderId } = data;
@@ -47,7 +48,7 @@ export const createReview = async (userId: string, data: any) => {
     user: userObjId,
     order: hasBought?._id as Types.ObjectId,
     rating,
-    comment
+    comment: sanitize(comment)
   });
 
   const populated = await reviewRepository.getReviewById(review._id.toString());
@@ -58,8 +59,18 @@ export const getProductReviews = async (productId: string) => {
   return reviewRepository.getReviewsForProduct(productId);
 };
 
-export const getAllReviews = async () => {
-  return reviewRepository.getAllReviews();
+export const getAllReviews = async (page = 1, limit = 20) => {
+  const [data, total] = await Promise.all([
+    reviewRepository.getAllReviews(page, limit),
+    reviewRepository.countReviews(),
+  ]);
+
+  return {
+    data,
+    total,
+    page,
+    totalPages: Math.ceil(total / limit),
+  };
 };
 
 export const updateReview = async (id: string, data: any) => {
@@ -72,7 +83,7 @@ export const updateReview = async (id: string, data: any) => {
 
   if (isHidden !== undefined) review.isHidden = isHidden;
   if (isApproved !== undefined) review.isApproved = isApproved;
-  if (adminReply !== undefined) review.adminReply = adminReply;
+  if (adminReply !== undefined) review.adminReply = sanitize(adminReply);
 
   const updated = await review.save();
 

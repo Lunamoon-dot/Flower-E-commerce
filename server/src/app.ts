@@ -5,7 +5,6 @@ import express, { Request, Response } from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 
-// Note: These imports will be updated in Phase 5 to point to src/modules
 import authRoutes from "./modules/auth/auth.route";
 import productRoutes from "./modules/product/product.route";
 import orderRoutes from "./modules/order/order.route";
@@ -32,12 +31,10 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/vouchers", voucherRoutes);
 app.use("/api/reviews", reviewRoutes);
 
-app.get("/", (_req: Request, res: Response) => {
-  res.json({ message: "Server is running!" });
-});
+import { errorMiddleware } from "./shared/middleware/error.middleware";
 
-app.get("/api/health", (_req: Request, res: Response) => {
-  res.json({ status: "ok", timestamp: new Date().toISOString() });
-});
+// ... existing app usage ...
+
+app.use(errorMiddleware);
 
 export default app;

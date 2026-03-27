@@ -25,7 +25,9 @@ export const getProductReviews = async (req: Request, res: Response): Promise<vo
 
 export const getAllReviews = async (req: Request, res: Response): Promise<void> => {
   try {
-    const reviews = await reviewService.getAllReviews();
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
+    const reviews = await reviewService.getAllReviews(page, limit);
     res.json(reviews);
   } catch (error) {
     res.status(500).json({ message: "Failed to fetch reviews" });

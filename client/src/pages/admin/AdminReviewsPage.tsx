@@ -1,26 +1,31 @@
 import { useEffect, useState } from "react"
 import { MessageSquare, Star, CheckCircle, XCircle } from "lucide-react"
 import { adminService } from "@/services/adminService"
-import type { Review, Order } from "@/types"
+import type { Order } from "@/types"
+import { stripTags } from "@/lib/utils"
 
 export function AdminReviewsPage() {
-  const [reviews, setReviews] = useState<Review[]>([])
+  const [reviews, setReviews] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const limit = 20
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const [orderModalOpen, setOrderModalOpen] = useState(false)
   const [fetchingOrder, setFetchingOrder] = useState(false)
 
-  const fetchReviews = async () => {
+  const fetchReviews = async (page = currentPage) => {
     setLoading(true)
     try {
-      const data = await adminService.getReviews()
-      setReviews(data)
+      const res = await adminService.getReviews(page, limit)
+      setReviews(res.data)
+      setTotalPages(res.totalPages)
     } finally {
       setLoading(false)
     }
   }
 
-  useEffect(() => { fetchReviews() }, [])
+  useEffect(() => { fetchReviews(currentPage) }, [currentPage])
 
   const handleUpdate = async (id: string, isApproved: boolean, isHidden: boolean) => {
     try {
@@ -90,11 +95,11 @@ export function AdminReviewsPage() {
                 </div>
               </div>
               
-              <div className="text-sm text-white/80 line-clamp-3 mb-4">{r.comment}</div>
+              <div className="text-sm text-white/80 line-clamp-3 mb-4">{stripTags(r.comment)}</div>
               {r.adminReply && (
                 <div className="bg-pink-500/10 border border-pink-500/20 p-3 rounded-xl mb-4 text-xs">
                   <span className="text-pink-400 font-bold block mb-1">Admin:</span>
-                  <span className="text-white/80">{r.adminReply}</span>
+                  <span className="text-white/80">{stripTags(r.adminReply)}</span>
                 </div>
               )}
 
@@ -131,6 +136,31 @@ export function AdminReviewsPage() {
           ))
         )}
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between px-2 py-4">
+          <p className="text-xs text-white/40">
+            Trang {currentPage} / {totalPages}
+          </p>
+          <div className="flex gap-2">
+            <button
+              disabled={currentPage === 1 || loading}
+              onClick={() => setCurrentPage((p) => p - 1)}
+              className="rounded-lg border border-white/10 px-3 py-1.5 text-xs font-medium text-white/60 hover:bg-white/5 disabled:opacity-30"
+            >
+              Trước
+            </button>
+            <button
+              disabled={currentPage === totalPages || loading}
+              onClick={() => setCurrentPage((p) => p + 1)}
+              className="rounded-lg border border-white/10 px-3 py-1.5 text-xs font-medium text-white/60 hover:bg-white/5 disabled:opacity-30"
+            >
+              Tiếp
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Order Details Modal */}
       {orderModalOpen && (

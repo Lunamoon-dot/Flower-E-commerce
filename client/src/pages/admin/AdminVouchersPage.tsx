@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
-import { Ticket, Plus, Trash2, X, Check } from "lucide-react"
+import { Plus, Trash2, X, Check } from "lucide-react"
+import { formatPrice } from "@/lib/utils"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -17,13 +18,15 @@ const voucherSchema = z.object({
 })
 type FormData = z.infer<typeof voucherSchema>
 
-function formatPrice(n: number) {
-  return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(n)
-}
+
 
 export function AdminVouchersPage() {
-  const [vouchers, setVouchers] = useState<Voucher[]>([])
+  const [vouchers, setVouchers] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalItems, setTotalItems] = useState(0)
+  const limit = 20
   const [showModal, setShowModal] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [toast, setToast] = useState<{msg: string, type: "success"|"error"} | null>(null)
@@ -33,17 +36,19 @@ export function AdminVouchersPage() {
     defaultValues: { type: "percent", value: 0, minOrderValue: 0, usageLimit: 10 }
   })
 
-  const fetchVouchers = async () => {
+  const fetchVouchers = async (page = currentPage) => {
     setLoading(true)
     try {
-      const data = await adminService.getVouchers()
-      setVouchers(data)
+      const res = await adminService.getVouchers(page, limit)
+      setVouchers(res.data)
+      setTotalPages(res.totalPages)
+      setTotalItems(res.total)
     } finally {
       setLoading(false)
     }
   }
 
-  useEffect(() => { fetchVouchers() }, [])
+  useEffect(() => { fetchVouchers(currentPage) }, [currentPage])
 
   const onSubmit = async (data: FormData) => {
     setSubmitting(true)
@@ -82,11 +87,8 @@ export function AdminVouchersPage() {
 
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-            <Ticket className="size-6 text-pink-500" />
-            Voucher Khuyến mãi
-          </h1>
-          <p className="text-sm text-white/40">Quản lý mã giảm giá trên hệ thống</p>
+          <h1 className="text-2xl font-bold text-white">Quản lý Voucher ({totalItems})</h1>
+          <p className="text-white/40 text-sm">Tạo và quản lý các mã giảm giá cho khách hàng</p>
         </div>
         <button onClick={() => setShowModal(true)} className="flex items-center gap-2 rounded-xl bg-pink-500 px-4 py-2.5 text-sm font-bold text-white hover:bg-pink-600">
           <Plus className="size-4" /> Thêm mới
@@ -150,6 +152,31 @@ export function AdminVouchersPage() {
           </table>
         )}
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between px-2 py-4">
+          <p className="text-xs text-white/40">
+            Trang {currentPage} / {totalPages}
+          </p>
+          <div className="flex gap-2">
+            <button
+              disabled={currentPage === 1 || loading}
+              onClick={() => setCurrentPage((p) => p - 1)}
+              className="rounded-lg border border-white/10 px-3 py-1.5 text-xs font-medium text-white/60 hover:bg-white/5 disabled:opacity-30"
+            >
+              Trước
+            </button>
+            <button
+              disabled={currentPage === totalPages || loading}
+              onClick={() => setCurrentPage((p) => p + 1)}
+              className="rounded-lg border border-white/10 px-3 py-1.5 text-xs font-medium text-white/60 hover:bg-white/5 disabled:opacity-30"
+            >
+              Tiếp
+            </button>
+          </div>
+        </div>
+      )}
 
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">

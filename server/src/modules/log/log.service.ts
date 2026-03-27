@@ -21,6 +21,16 @@ export const logActivity = async (
   }
 };
 
-export const getLogs = async () => {
-  return logRepository.getLogs();
+export const getLogs = async (page = 1, limit = 20) => {
+  const [data, total] = await Promise.all([
+    logRepository.getLogs(page, limit),
+    logRepository.countLogs(),
+  ]);
+
+  return {
+    data,
+    total,
+    page,
+    totalPages: Math.ceil(total / limit),
+  };
 };

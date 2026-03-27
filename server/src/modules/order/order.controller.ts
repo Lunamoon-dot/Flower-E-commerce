@@ -23,10 +23,12 @@ export const getUserOrders = async (req: AuthRequest, res: Response): Promise<vo
   }
 };
 
-export const getAllOrders = async (_req: AuthRequest, res: Response): Promise<void> => {
+export const getAllOrders = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const orders = await orderService.getAllOrders();
-    res.json(orders);
+    const page = parseInt(req.query.page as string, 10) || 1;
+    const limit = parseInt(req.query.limit as string, 10) || 20;
+    const result = await orderService.getAllOrders(page, limit);
+    res.json(result);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to fetch orders";
     res.status(500).json({ message });
@@ -44,5 +46,15 @@ export const updateOrderStatus = async (req: AuthRequest, res: Response): Promis
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to update order";
     res.status(400).json({ message });
+  }
+};
+
+export const getOrderById = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const order = await orderService.getOrderById(req.params.id as string);
+    res.json(order);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to fetch order details";
+    res.status(404).json({ message });
   }
 };

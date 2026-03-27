@@ -1,5 +1,5 @@
 import api from "./api"
-import type { Product, Order, Voucher, Review, ActivityLog } from "@/types"
+import type { Product, Order, Review, Voucher } from "@/types"
 
 export interface DashboardStats {
   totalRevenue: number
@@ -50,14 +50,18 @@ export interface AdminUser {
 
 export const adminService = {
   // Dashboard
+  getStats: async (): Promise<DashboardStats> => {
+    const { data } = await api.get("/admin/dashboard/stats")
+    return data
+  },
   getDashboard: async (): Promise<DashboardResponse> => {
     const { data } = await api.get("/admin/dashboard")
     return data
   },
 
   // Users
-  getUsers: async (): Promise<AdminUser[]> => {
-    const { data } = await api.get("/admin/users")
+  getUsers: async (page = 1, limit = 20): Promise<{ data: AdminUser[]; total: number; totalPages: number; page: number }> => {
+    const { data } = await api.get(`/admin/users?page=${page}&limit=${limit}`)
     return data
   },
   updateUserRole: async (id: string, role: "user" | "admin"): Promise<AdminUser> => {
@@ -69,8 +73,12 @@ export const adminService = {
   },
 
   // Orders
-  getOrders: async (): Promise<Order[]> => {
-    const { data } = await api.get("/admin/orders")
+  getOrders: async (page = 1, limit = 20): Promise<{ data: Order[]; total: number; totalPages: number; page: number }> => {
+    const { data } = await api.get(`/admin/orders?page=${page}&limit=${limit}`)
+    return data
+  },
+  getOrder: async (id: string): Promise<Order> => {
+    const { data } = await api.get(`/admin/orders/${id}`)
     return data
   },
   updateOrderStatus: async (id: string, status: string): Promise<Order> => {
@@ -79,8 +87,8 @@ export const adminService = {
   },
 
   // Products
-  getProducts: async (): Promise<{ products: Product[]; total: number }> => {
-    const { data } = await api.get("/admin/products?limit=100")
+  getProducts: async (page = 1, limit = 20): Promise<{ data: Product[]; total: number; totalPages: number; page: number }> => {
+    const { data } = await api.get(`/admin/products?page=${page}&limit=${limit}`)
     return data
   },
   createProduct: async (productData: Omit<Product, "_id" | "createdAt" | "rating" | "numReviews">): Promise<Product> => {
@@ -96,8 +104,8 @@ export const adminService = {
   },
 
   // Vouchers
-  getVouchers: async (): Promise<Voucher[]> => {
-    const { data } = await api.get("/admin/vouchers")
+  getVouchers: async (page = 1, limit = 20): Promise<{ data: any[]; total: number; totalPages: number; page: number }> => {
+    const { data } = await api.get(`/admin/vouchers?page=${page}&limit=${limit}`)
     return data
   },
   createVoucher: async (voucherData: Partial<Voucher>): Promise<Voucher> => {
@@ -113,8 +121,8 @@ export const adminService = {
   },
 
   // Reviews
-  getReviews: async (): Promise<Review[]> => {
-    const { data } = await api.get("/admin/reviews")
+  getReviews: async (page = 1, limit = 20): Promise<{ data: any[]; total: number; totalPages: number; page: number }> => {
+    const { data } = await api.get(`/admin/reviews?page=${page}&limit=${limit}`)
     return data
   },
   updateReview: async (id: string, reviewData: Partial<Review>): Promise<Review> => {
@@ -127,8 +135,8 @@ export const adminService = {
   },
 
   // Logs
-  getLogs: async (): Promise<ActivityLog[]> => {
-    const { data } = await api.get("/admin/logs")
+  getLogs: async (page = 1, limit = 20): Promise<{ data: any[]; total: number; totalPages: number; page: number }> => {
+    const { data } = await api.get(`/admin/logs?page=${page}&limit=${limit}`)
     return data
   },
 }
