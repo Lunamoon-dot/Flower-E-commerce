@@ -7,7 +7,8 @@ import { useCartStore } from "@/store/useCartStore"
 export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const { user, logout } = useAuthStore()
-  const totalItems = useCartStore((s) => s.totalItems)
+  const cart = useCartStore((s) => s.cart)
+  const totalItemsCount = cart.reduce((sum, item) => sum + item.quantity, 0)
   const navigate = useNavigate()
 
   const handleLogout = () => {
@@ -63,9 +64,9 @@ export function Navbar() {
             className="relative flex size-9 items-center justify-center rounded-full text-white transition-all hover:bg-pink-600/40"
           >
             <ShoppingCart className="size-[18px]" strokeWidth={2.5} />
-            {totalItems() > 0 && (
+            {totalItemsCount > 0 && (
               <span className="absolute -right-1.5 -top-1.5 flex size-5 items-center justify-center rounded-full bg-rose-500 text-[10px] font-black text-white shadow-xl ring-2 ring-pink-300">
-                {totalItems()}
+                {totalItemsCount}
               </span>
             )}
           </button>

@@ -1,10 +1,11 @@
 import { Router } from "express";
 import { protect, adminOnly, staffOnly } from "../../shared/middleware/auth";
-import { validateVoucher, getVouchers, createVoucher, updateVoucher, deleteVoucher } from "./voucher.controller";
+import { validateVoucher, getVouchers, createVoucher, updateVoucher, deleteVoucher, getActiveVouchers } from "./voucher.controller";
 
 const router = Router();
 
 router.post("/validate", protect, validateVoucher); // Users can validate
+router.get("/active", getActiveVouchers); // Get active vouchers for checkout
 
 // Admin routes will be integrated in Admin module or mounted here directly
 // This route file may just be for public / user facing endpoints

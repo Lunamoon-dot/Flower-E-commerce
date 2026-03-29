@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
 import { MessageSquare, Star, CheckCircle, XCircle } from "lucide-react"
+import { Pagination } from "@/components/ui/pagination"
 import { adminService } from "@/services/adminService"
 import type { Order } from "@/types"
 import { stripTags } from "@/lib/utils"
@@ -9,7 +10,7 @@ export function AdminReviewsPage() {
   const [loading, setLoading] = useState(true)
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
-  const limit = 20
+  const limit = 7
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const [orderModalOpen, setOrderModalOpen] = useState(false)
   const [fetchingOrder, setFetchingOrder] = useState(false)
@@ -138,29 +139,12 @@ export function AdminReviewsPage() {
       </div>
 
       {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between px-2 py-4">
-          <p className="text-xs text-white/40">
-            Trang {currentPage} / {totalPages}
-          </p>
-          <div className="flex gap-2">
-            <button
-              disabled={currentPage === 1 || loading}
-              onClick={() => setCurrentPage((p) => p - 1)}
-              className="rounded-lg border border-white/10 px-3 py-1.5 text-xs font-medium text-white/60 hover:bg-white/5 disabled:opacity-30"
-            >
-              Trước
-            </button>
-            <button
-              disabled={currentPage === totalPages || loading}
-              onClick={() => setCurrentPage((p) => p + 1)}
-              className="rounded-lg border border-white/10 px-3 py-1.5 text-xs font-medium text-white/60 hover:bg-white/5 disabled:opacity-30"
-            >
-              Tiếp
-            </button>
-          </div>
-        </div>
-      )}
+      <Pagination 
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={setCurrentPage}
+        disabled={loading}
+      />
 
       {/* Order Details Modal */}
       {orderModalOpen && (

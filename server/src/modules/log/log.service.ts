@@ -21,10 +21,23 @@ export const logActivity = async (
   }
 };
 
-export const getLogs = async (page = 1, limit = 20) => {
+export const getLogs = async (page = 1, limit = 20, date?: string) => {
+  const query: any = {};
+  
+  if (date) {
+    const startDate = new Date(date);
+    startDate.setHours(0, 0, 0, 0);
+    const endDate = new Date(date);
+    endDate.setHours(23, 59, 59, 999);
+    query.createdAt = {
+      $gte: startDate,
+      $lte: endDate
+    };
+  }
+
   const [data, total] = await Promise.all([
-    logRepository.getLogs(page, limit),
-    logRepository.countLogs(),
+    logRepository.getLogs(page, limit, query),
+    logRepository.countLogs(query),
   ]);
 
   return {

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
 import { Users, Search, Trash2, X, Check } from "lucide-react"
+import { Pagination } from "@/components/ui/pagination"
 import { adminService, type AdminUser } from "@/services/adminService"
 import { useAuthStore } from "@/store/useAuthStore"
 
@@ -19,7 +20,7 @@ export function AdminUsersPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [totalItems, setTotalItems] = useState(0)
-  const limit = 20
+  const limit = 6
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [toast, setToast] = useState<{ msg: string; type: "success" | "error" } | null>(null)
 
@@ -221,29 +222,12 @@ export function AdminUsersPage() {
       </div>
 
       {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between px-2 py-4">
-          <p className="text-xs text-white/40">
-            Trang {currentPage} / {totalPages}
-          </p>
-          <div className="flex gap-2">
-            <button
-              disabled={currentPage === 1 || loading}
-              onClick={() => setCurrentPage((p) => p - 1)}
-              className="rounded-lg border border-white/10 px-3 py-1.5 text-xs font-medium text-white/60 hover:bg-white/5 disabled:opacity-30"
-            >
-              Trước
-            </button>
-            <button
-              disabled={currentPage === totalPages || loading}
-              onClick={() => setCurrentPage((p) => p + 1)}
-              className="rounded-lg border border-white/10 px-3 py-1.5 text-xs font-medium text-white/60 hover:bg-white/5 disabled:opacity-30"
-            >
-              Tiếp
-            </button>
-          </div>
-        </div>
-      )}
+      <Pagination 
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={setCurrentPage}
+        disabled={loading}
+      />
 
       {/* Delete confirm */}
       {deleteId && (

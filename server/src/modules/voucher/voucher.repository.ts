@@ -14,6 +14,19 @@ export const countVouchers = async () => {
   return Voucher.countDocuments();
 };
 
+export const getActiveVouchers = async () => {
+  const now = new Date();
+  return Voucher.find({
+    isActive: true,
+    startDate: { $lte: now },
+    endDate: { $gte: now },
+    $expr: { $lt: ["$usedCount", "$usageLimit"] }
+  })
+    .sort({ value: -1 })
+    .lean()
+    .exec();
+};
+
 export const findVoucherByCode = async (code: string) => {
   return Voucher.findOne({ code }).lean().exec();
 };

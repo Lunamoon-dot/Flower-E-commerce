@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
-import { TerminalSquare, RefreshCcw } from "lucide-react"
+import { TerminalSquare, RefreshCcw, Calendar, X } from "lucide-react"
+import { Pagination } from "@/components/ui/pagination"
 import { adminService } from "@/services/adminService"
 
 export function AdminLogsPage() {
@@ -8,12 +9,14 @@ export function AdminLogsPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [totalItems, setTotalItems] = useState(0)
-  const limit = 20
+  const limit = 7
 
-  const loadLogs = async (page = currentPage) => {
+  const [filterDate, setFilterDate] = useState("")
+
+  const loadLogs = async (page = currentPage, date = filterDate) => {
     setLoading(true)
     try {
-      const res = await adminService.getLogs(page, limit)
+      const res = await adminService.getLogs(page, limit, date || undefined)
       setLogs(res.data)
       setTotalPages(res.totalPages)
       setTotalItems(res.total)
@@ -25,8 +28,14 @@ export function AdminLogsPage() {
   }
 
   useEffect(() => {
-    loadLogs(currentPage)
+    loadLogs(currentPage, filterDate)
   }, [currentPage])
+
+  const handleDateChange = (date: string) => {
+    setFilterDate(date)
+    setCurrentPage(1)
+    loadLogs(1, date)
+  }
 
   return (
     <div className="space-y-5">
@@ -38,14 +47,33 @@ export function AdminLogsPage() {
           </h1>
           <p className="text-sm text-white/40">{totalItems} nhật ký hoạt động</p>
         </div>
-        <button
-          onClick={() => loadLogs(1)}
-          disabled={loading}
-          className="flex items-center gap-2 rounded-xl bg-white/5 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-white/10 disabled:opacity-50"
-        >
-          <RefreshCcw className={`size-4 ${loading ? "animate-spin" : ""}`} />
-          Làm mới
-        </button>
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <Calendar className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-white/30" />
+            <input
+              type="date"
+              value={filterDate}
+              onChange={(e) => handleDateChange(e.target.value)}
+              className="w-[160px] cursor-pointer rounded-xl border border-white/5 bg-[#1a1a24] py-2.5 pl-9 pr-8 text-sm text-white outline-none focus:border-pink-500/50 [color-scheme:dark]"
+            />
+            {filterDate && (
+              <button
+                onClick={() => handleDateChange("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white"
+              >
+                <X className="size-3.5" />
+              </button>
+            )}
+          </div>
+          <button
+            onClick={() => loadLogs(1, filterDate)}
+            disabled={loading}
+            className="flex items-center gap-2 rounded-xl bg-white/5 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-white/10 disabled:opacity-50"
+          >
+            <RefreshCcw className={`size-4 ${loading ? "animate-spin" : ""}`} />
+            Làm mới
+          </button>
+        </div>
       </div>
 
       <div className="overflow-auto rounded-2xl border border-white/5 bg-[#1a1a24]">
@@ -96,29 +124,12 @@ export function AdminLogsPage() {
       </div>
 
       {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between px-2 py-4">
-          <p className="text-xs text-white/40">
-            Trang {currentPage} / {totalPages}
-          </p>
-          <div className="flex gap-2">
-            <button
-              disabled={currentPage === 1 || loading}
-              onClick={() => setCurrentPage((p) => p - 1)}
-              className="rounded-lg border border-white/10 px-3 py-1.5 text-xs font-medium text-white/60 hover:bg-white/5 disabled:opacity-30"
-            >
-              Trước
-            </button>
-            <button
-              disabled={currentPage === totalPages || loading}
-              onClick={() => setCurrentPage((p) => p + 1)}
-              className="rounded-lg border border-white/10 px-3 py-1.5 text-xs font-medium text-white/60 hover:bg-white/5 disabled:opacity-30"
-            >
-              Tiếp
-            </button>
-          </div>
-        </div>
-      )}
+      <Pagination 
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={setCurrentPage}
+        disabled={loading}
+      />
     </div>
   )
 }

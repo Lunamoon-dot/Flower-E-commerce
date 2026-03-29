@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react"
 import { Plus, Trash2, X, Check } from "lucide-react"
+import { Pagination } from "@/components/ui/pagination"
 import { formatPrice } from "@/lib/utils"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { adminService } from "@/services/adminService"
-import type { Voucher } from "@/types"
 
 const voucherSchema = z.object({
   code: z.string().min(1, "Bắt buộc"),
@@ -26,7 +26,7 @@ export function AdminVouchersPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [totalItems, setTotalItems] = useState(0)
-  const limit = 20
+  const limit = 7
   const [showModal, setShowModal] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [toast, setToast] = useState<{msg: string, type: "success"|"error"} | null>(null)
@@ -154,29 +154,12 @@ export function AdminVouchersPage() {
       </div>
 
       {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between px-2 py-4">
-          <p className="text-xs text-white/40">
-            Trang {currentPage} / {totalPages}
-          </p>
-          <div className="flex gap-2">
-            <button
-              disabled={currentPage === 1 || loading}
-              onClick={() => setCurrentPage((p) => p - 1)}
-              className="rounded-lg border border-white/10 px-3 py-1.5 text-xs font-medium text-white/60 hover:bg-white/5 disabled:opacity-30"
-            >
-              Trước
-            </button>
-            <button
-              disabled={currentPage === totalPages || loading}
-              onClick={() => setCurrentPage((p) => p + 1)}
-              className="rounded-lg border border-white/10 px-3 py-1.5 text-xs font-medium text-white/60 hover:bg-white/5 disabled:opacity-30"
-            >
-              Tiếp
-            </button>
-          </div>
-        </div>
-      )}
+      <Pagination 
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={setCurrentPage}
+        disabled={loading}
+      />
 
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">

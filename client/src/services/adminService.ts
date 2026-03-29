@@ -135,8 +135,10 @@ export const adminService = {
   },
 
   // Logs
-  getLogs: async (page = 1, limit = 20): Promise<{ data: any[]; total: number; totalPages: number; page: number }> => {
-    const { data } = await api.get(`/admin/logs?page=${page}&limit=${limit}`)
+  getLogs: async (page = 1, limit = 20, date?: string): Promise<{ data: any[]; total: number; totalPages: number; page: number }> => {
+    let url = `/admin/logs?page=${page}&limit=${limit}`;
+    if (date) url += `&date=${date}`;
+    const { data } = await api.get(url);
     return data
   },
 }

@@ -1,5 +1,5 @@
 import * as authRepository from "./auth.repository";
-import { generateToken } from "../../shared/utils/jwt";
+import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from "../../shared/utils/jwt";
 
 export const registerUser = async (userData: any) => {
   const existingUser = await authRepository.findUserByEmail(userData.email);
@@ -8,9 +8,10 @@ export const registerUser = async (userData: any) => {
   }
 
   const user = await authRepository.createUser(userData);
-  const token = generateToken(String(user._id), user.role);
+  const accessToken = generateAccessToken(String(user._id), user.role);
+  const refreshToken = generateRefreshToken(String(user._id), user.role);
 
-  return { user, token };
+  return { user, accessToken, refreshToken };
 };
 
 export const loginUser = async (credentials: any) => {
@@ -24,8 +25,10 @@ export const loginUser = async (credentials: any) => {
     throw new Error("Invalid email or password");
   }
 
-  const token = generateToken(String(user._id), user.role);
-  return { user, token };
+  const accessToken = generateAccessToken(String(user._id), user.role);
+  const refreshToken = generateRefreshToken(String(user._id), user.role);
+
+  return { user, accessToken, refreshToken };
 };
 
 export const getMe = async (userId: string) => {
@@ -34,4 +37,27 @@ export const getMe = async (userId: string) => {
     throw new Error("User not found");
   }
   return user;
+};
+
+export const refreshUserToken = async (refreshToken: string) => {
+  if (!refreshToken) {
+    throw new Error("No refresh token provided");
+  }
+
+  try {
+    const decoded = verifyRefreshToken(refreshToken);
+    const user = await authRepository.findUserById(decoded.id);
+    
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    const accessToken = generateAccessToken(String(user._id), user.role);
+    // Optionally rotate refresh token
+    const newRefreshToken = generateRefreshToken(String(user._id), user.role);
+
+    return { user, accessToken, refreshToken: newRefreshToken };
+  } catch (error) {
+    throw new Error("Invalid or expired refresh token");
+  }
 };

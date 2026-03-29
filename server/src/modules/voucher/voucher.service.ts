@@ -15,6 +15,10 @@ export const getVouchers = async (page = 1, limit = 20) => {
   };
 };
 
+export const getActiveVouchers = async () => {
+  return voucherRepository.getActiveVouchers();
+};
+
 export const createVoucher = async (data: any) => {
   const { code, type, value, minOrderValue, startDate, endDate, usageLimit } = data;
   const upperCode = sanitize(code).toUpperCase();

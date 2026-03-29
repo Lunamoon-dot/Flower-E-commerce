@@ -1,9 +1,9 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useNavigate, Link } from "react-router-dom"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
-import { ChevronLeft, CreditCard, Banknote, Loader2 } from "lucide-react"
+import { ChevronLeft, CreditCard, Banknote, Loader2, TicketPercent, CheckCircle2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
@@ -12,6 +12,7 @@ import { useAuthStore } from "@/store/useAuthStore"
 import { formatPrice } from "@/lib/utils"
 import { orderService } from "@/services/orderService"
 import { voucherService } from "@/services/voucherService"
+import type { Voucher } from "@/types"
 
 const checkoutSchema = z.object({
   fullName: z.string().min(2, "Vui lòng nhập họ tên"),
@@ -36,6 +37,13 @@ export function CheckoutPage() {
   const [discountAmount, setDiscountAmount] = useState(0)
   const [voucherError, setVoucherError] = useState("")
   const [voucherSuccess, setVoucherSuccess] = useState("")
+  const [activeVouchers, setActiveVouchers] = useState<Voucher[]>([])
+
+  useEffect(() => {
+    voucherService.getActiveVouchers()
+      .then(setActiveVouchers)
+      .catch(console.error)
+  }, [])
 
   const {
     register,
@@ -84,12 +92,13 @@ export function CheckoutPage() {
     }
   }
 
-  const handleApplyVoucher = async () => {
-    if (!voucherCode.trim()) return
+  const applyVoucherCode = async (code: string) => {
+    if (!code.trim()) return
+    setVoucherCode(code)
     setVoucherError("")
     setVoucherSuccess("")
     try {
-      const res = await voucherService.validateVoucher(voucherCode, totalPrice())
+      const res = await voucherService.validateVoucher(code, totalPrice())
       setDiscountAmount(res.discountAmount)
       setVoucherSuccess("Áp dụng mã thành công!")
       if (res.voucher.type === "freeship") {
@@ -100,6 +109,8 @@ export function CheckoutPage() {
       setVoucherError(err.response?.data?.message || "Mã không hợp lệ")
     }
   }
+
+  const handleApplyVoucher = () => applyVoucherCode(voucherCode)
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -274,19 +285,155 @@ export function CheckoutPage() {
             </div>
 
             {/* Voucher Section */}
-            <div className="rounded-xl border border-border/60 bg-card p-6">
-              <h2 className="mb-4 text-lg font-semibold text-foreground">Mã khuyến mãi</h2>
-              <div className="flex gap-2">
-                <Input 
-                  placeholder="Nhập mã voucher..." 
-                  value={voucherCode} 
-                  onChange={e => setVoucherCode(e.target.value)}
-                  className="uppercase uppercase"
-                />
-                <Button type="button" onClick={handleApplyVoucher} variant="secondary">Áp dụng</Button>
+            {/* Voucher Section - Beautiful Ticket Design */}
+            <div className="rounded-2xl border border-pink-500/10 bg-gradient-to-br from-card to-pink-50/50 dark:to-pink-950/10 p-6 shadow-sm">
+              <div className="flex items-center gap-2 mb-5">
+                <div className="flex size-8 items-center justify-center rounded-full bg-pink-100 dark:bg-pink-500/20 text-pink-600 dark:text-pink-400">
+                  <TicketPercent className="size-4" strokeWidth={2.5} />
+                </div>
+                <h2 className="text-lg font-bold text-foreground">Mã ưu đãi (Voucher)</h2>
               </div>
-              {voucherError && <p className="mt-2 text-sm text-red-500">{voucherError}</p>}
-              {voucherSuccess && <p className="mt-2 text-sm text-emerald-500">{voucherSuccess}</p>}
+              
+              <div className="flex gap-3">
+                <div className="relative flex-1">
+                  <Input 
+                    placeholder="Nhập mã voucher tại đây..." 
+                    value={voucherCode} 
+                    onChange={e => setVoucherCode(e.target.value)}
+                    className="h-12 rounded-xl border-border/60 bg-background/80 pr-10 uppercase transition-all focus-visible:ring-pink-500/30"
+                  />
+                </div>
+                <Button 
+                  type="button" 
+                  onClick={handleApplyVoucher} 
+                  className="h-12 w-[100px] rounded-xl font-bold bg-foreground hover:bg-foreground/90 text-background shadow-md"
+                >
+                  Áp dụng
+                </Button>
+              </div>
+
+              {voucherError && (
+                <div className="mt-3 flex items-center gap-2 rounded-lg bg-red-50 dark:bg-red-500/10 p-3 text-sm font-medium text-red-600 dark:text-red-400 border border-red-100 dark:border-red-900/30 animate-in fade-in slide-in-from-top-2">
+                  <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-red-100 dark:bg-red-500/20">!</span>
+                  {voucherError}
+                </div>
+              )}
+              {voucherSuccess && (
+                <div className="mt-3 flex items-center gap-2 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 p-3 text-sm font-bold text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/30 animate-in fade-in slide-in-from-top-2">
+                  <CheckCircle2 className="size-5 shrink-0 text-emerald-500" strokeWidth={2.5} />
+                  {voucherSuccess}
+                </div>
+              )}
+              
+              {activeVouchers.length > 0 && (
+                <div className="mt-8 space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="h-px flex-1 bg-border/60" />
+                    <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Voucher có sẵn</p>
+                    <div className="h-px flex-1 bg-border/60" />
+                  </div>
+                  
+                  <div className="grid gap-4 max-h-[380px] overflow-y-auto pr-1 pb-2 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-border/50 hover:scrollbar-thumb-border/80">
+                    {activeVouchers.map(v => {
+                      const isEligible = totalPrice() >= v.minOrderValue;
+                      const isSelected = voucherCode === v.code && discountAmount > 0;
+                      
+                      return (
+                        <div 
+                          key={v._id} 
+                          className={`group relative flex overflow-hidden rounded-xl border transition-all duration-300 ${
+                            isEligible 
+                              ? isSelected 
+                                ? 'border-pink-500 bg-pink-50/50 dark:bg-pink-500/5 ring-1 ring-pink-500/20 shadow-md shadow-pink-500/10 scale-[1.01]' 
+                                : 'border-border/60 bg-card hover:border-pink-300 dark:hover:border-pink-500/40 hover:shadow-md hover:-translate-y-0.5' 
+                              : 'bg-muted/40 border-border/40 opacity-75 grayscale-[0.5]'
+                          }`}
+                        >
+                          {/* Left Decorative Section (Ticket Stub) */}
+                          <div className={`relative flex w-24 shrink-0 flex-col items-center justify-center bg-gradient-to-br p-3 text-center border-r border-dashed ${
+                            isEligible
+                              ? isSelected
+                                ? 'from-pink-500 to-rose-600 text-white border-pink-500/30'
+                                : 'from-pink-50 to-pink-100 dark:from-pink-900/30 dark:to-pink-800/20 border-border/80 text-pink-700 dark:text-pink-300 group-hover:from-pink-100 group-hover:to-pink-200 dark:group-hover:from-pink-800/40 dark:group-hover:to-pink-700/30'
+                              : 'from-muted to-muted border-border/40 text-muted-foreground'
+                          }`}>
+                            {/* Decorative Cutouts */}
+                            <div className="absolute -left-1.5 top-1/2 h-3 w-3 -translate-y-1/2 rounded-full bg-background border-r border-background shadow-[1px_0_0_rgba(0,0,0,0.05)]" />
+                            <div className="absolute -right-1.5 top-1/2 h-3 w-3 -translate-y-1/2 rounded-full bg-background border-l border-background shadow-[-1px_0_0_rgba(0,0,0,0.05)]" />
+
+                            <TicketPercent className={`size-6 mb-1 opacity-80 ${isSelected && isEligible ? 'text-white' : ''}`} />
+                            <span className="text-[10px] font-black uppercase tracking-wider leading-tight">
+                              {v.type === 'freeship' ? 'Freeship' : v.type === 'percent' ? `Giảm ${v.value}%` : `Giảm ${formatPrice(v.value).replace('₫', '')}`}
+                            </span>
+                          </div>
+
+                          {/* Right Content Section */}
+                          <div className="flex flex-1 flex-col justify-center p-4 pl-5">
+                            <div className="flex items-start justify-between gap-2">
+                              <div>
+                                <h3 className={`font-black text-sm uppercase tracking-wider mb-1 ${
+                                  isSelected ? 'text-pink-600 dark:text-pink-400' : 'text-foreground'
+                                }`}>
+                                  {v.code}
+                                </h3>
+                                <p className="text-xs text-muted-foreground leading-relaxed">
+                                  {v.type === 'freeship' 
+                                    ? 'Miễn phí vận chuyển cho đơn hàng' 
+                                    : v.type === 'percent' 
+                                      ? `Giảm ${v.value}% cho tổng giá trị đơn hàng` 
+                                      : `Giảm ${formatPrice(v.value)} trực tiếp vào tổng tiền`
+                                  }
+                                </p>
+                              </div>
+                            </div>
+                            
+                            <div className="mt-3 flex flex-wrap items-end justify-between gap-3">
+                              <div className="rounded-md bg-muted/50 px-2 py-1 border border-border/50 inline-flex items-center gap-1">
+                                <span className="text-[10px] font-medium text-muted-foreground">Đơn tối thiểu:</span>
+                                <span className="text-xs font-bold text-foreground">
+                                  {formatPrice(v.minOrderValue)}
+                                </span>
+                              </div>
+                              
+                              {isEligible ? (
+                                <Button 
+                                  type="button"
+                                  size="sm" 
+                                  className={`h-7 px-4 text-xs font-bold rounded-full transition-all ${
+                                    isSelected 
+                                      ? "bg-pink-500 hover:bg-pink-600 text-white shadow-md shadow-pink-500/20" 
+                                      : "bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground"
+                                  }`}
+                                  onClick={() => applyVoucherCode(v.code)}
+                                >
+                                  {isSelected ? (
+                                    <span className="flex items-center gap-1.5">
+                                      <CheckCircle2 className="size-3.5" />
+                                      Đã chọn
+                                    </span>
+                                  ) : "Áp dụng"}
+                                </Button>
+                              ) : (
+                                <div className="flex flex-col items-end">
+                                  <span className="text-[10px] font-bold text-rose-500 dark:text-rose-400">
+                                    Còn thiếu {formatPrice(v.minOrderValue - totalPrice())}
+                                  </span>
+                                  <div className="mt-1 h-1 w-20 overflow-hidden rounded-full bg-muted">
+                                    <div 
+                                      className="h-full bg-rose-400 rounded-full" 
+                                      style={{ width: `${Math.min(100, (totalPrice() / v.minOrderValue) * 100)}%` }}
+                                    />
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 

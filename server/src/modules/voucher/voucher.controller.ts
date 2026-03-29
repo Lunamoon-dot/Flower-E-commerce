@@ -14,6 +14,15 @@ export const getVouchers = async (req: Request, res: Response): Promise<void> =>
   }
 };
 
+export const getActiveVouchers = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const vouchers = await voucherService.getActiveVouchers();
+    res.json(vouchers);
+  } catch (error) {
+    res.status(500).json({ message: "Server error fetching active vouchers" });
+  }
+};
+
 export const createVoucher = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const voucher = await voucherService.createVoucher(req.body);

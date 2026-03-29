@@ -4,9 +4,9 @@ export const createLog = async (data: Partial<IActivityLog>) => {
   return ActivityLog.create(data);
 };
 
-export const getLogs = async (page = 1, limit = 20) => {
+export const getLogs = async (page = 1, limit = 20, query: any = {}) => {
   const skip = (page - 1) * limit;
-  return ActivityLog.find({})
+  return ActivityLog.find(query)
     .populate("admin", "name email role")
     .sort({ createdAt: -1 })
     .skip(skip)
@@ -14,6 +14,6 @@ export const getLogs = async (page = 1, limit = 20) => {
     .exec();
 };
 
-export const countLogs = async () => {
-  return ActivityLog.countDocuments();
+export const countLogs = async (query: any = {}) => {
+  return ActivityLog.countDocuments(query);
 };

@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { verifyToken } from "../utils/jwt";
+import { verifyAccessToken } from "../utils/jwt";
 
 export interface AuthRequest extends Request {
   user?: {
@@ -16,13 +16,8 @@ export const protect = async (
   try {
     let token: string | undefined;
 
-    // 1. Check HTTP-only cookie first (preferred)
-    if (req.cookies?.token) {
-      token = req.cookies.token;
-    }
-
-    // 2. Fallback to Authorization header (Bearer token)
-    if (!token && req.headers.authorization?.startsWith("Bearer ")) {
+    // Only get token from Authorization header (Bearer token)
+    if (req.headers.authorization?.startsWith("Bearer ")) {
       token = req.headers.authorization.split(" ")[1];
     }
 
@@ -31,7 +26,7 @@ export const protect = async (
       return;
     }
 
-    const decoded = verifyToken(token);
+    const decoded = verifyAccessToken(token);
     req.user = { id: decoded.id, role: decoded.role };
     next();
   } catch {
